@@ -21,31 +21,27 @@ proc prima_analisi {} {
 ------
 
 
-
-
 #calcolo latency
-proc latency {lista} {
+proc latency {lista_risorse} {
 	set lista[list]
 	set hu [list]   		;#lista con nodo e start time
 	set node_fu [list]		;#lista con nodo e unità funzionale
-	set in_corso [list]		;#lista con nodo che stanno in scheduling
+	set in_corso [list]		;#lista con nodo che stanno in scheduling e start_time
 	set l 0
 	set list_node [get_sorted_nodes]
-	while {list_node != []} { ;#bisogna scriverlo bene	
-		foreach node $in_corso {	
-			#calcolare start_time
-			#calcolare il delay	
-			#calcolare fu												;#da scrivere bene
-			if { expr {$start_time+$delay} == $l} {					    ;#da scrivere bene
-				lappend hu "$node $start_time"							;#da scrivere bene	
-				lappend node_fu "$node $fu"
-				set idx [lsearch $mylist $node]
-				set in_corso [lreplace $in_corso $idx $idx]				;#rimuovo nodo da in corso
+	while {$list_node != []} { 
+		foreach elem $in_corso {	
+			set node [lindex $elem 0]
+			set start_time [lindex $elem 1]
+			set fu_indx [lsearch -index 0 -all $node_fu $node]
+			set fu [lindex [lindex $node_fu $fu_indx] 1]
+			set delay [get_attribute $fu delay]							
+			if { expr {$start_time+$delay} == $l} {					    
+				lappend hu "$nodo $start_time"								
+				set in_corso [lreplace $in_corso $fu_indx $fu_indxx]				;#rimuovo nodo da in corso
 				aggiungo la risorsa nella lista risorse					;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 			}
 		}																;#da scrivere bene		
-		
-		
 		foreach node lista_node	
 			set start_time 1
 			foreach parent [get_attribute $node parents] {		;#da scrivere bene
@@ -74,19 +70,32 @@ proc latency {lista} {
 				if se i parenti non erano in hu uscire					;#da scrivere bene
 				#assegnare alla variabile risorsa_necessaria l'operazione del nodo figlio (quella che andremo ad aggiungere)
 				lappend node in corso 									;#da scrivere bene
-				lappend node fu											;#da scrivere bene
+				lappend node node_fu											;#da scrivere bene
 				rimuovi la risorsa dalla lista risorse					;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 				
 		incr l
 	}	
+	while {$in_corso != []} {
+		foreach elem $in_corso {	
+			set node [lindex $elem 0]
+			set start_time [lindex $elem 1]
+			set fu_indx [lsearch -index 0 -all $node_fu $node]
+			set fu [lindex [lindex $node_fu $fu_indx] 1]
+			set delay [get_attribute $fu delay]											;#da scrivere bene
+			if { expr {$start_time+$delay} == $l} {					   
+				lappend hu "$nodo $start_time"							
+				set in_corso [lreplace $in_corso $fu_indx $fu_indxx]				;#rimuovo nodo da in corso
+				aggiungo la risorsa nella lista risorse					;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
+			}
+		}
+		incr l																;#
+	}
 	lappend lista $hu 			;#"nodo start_time"
 	lappend lista $node_fu		;#"nodo fu"
 	lappend lista $risorse		;#"risorse n"
-	lappend fine_scheduling
+	lappend l
 	return lista	
 }			
-
-p1p2p3p4p5p6p7 f1f2
 
 #abbiamo bisogno di una lista che tiene conto delle risorse disponibili al momento
 #sarebbe comodo creare una variabile che indica che tipo di risorsa si necessita aumentare (iquadrando quale operazione non si riesce ad eseguire)
