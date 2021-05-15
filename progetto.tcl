@@ -1,12 +1,17 @@
+source ./tcl_scripts/setenv.tcl 
+read_design ./data/DFGs/fir.dot 
+read_library ./data/RTL_libraries/RTL_library_multi-resources.txt 
+
+
 
 #prima analisi
-proc prima_analisi {} {
+proc prima_analisi { } {
 	set lista_risorse [list]
 	foreach node [get_sorted_nodes] {
 		set node_op [get_attribute $node operation]
 		set fu [get_lib_fu_from_op $node_op]
 		set var [lsearch $lista_risorse "$fu 1"]
-		if {$var==-1} {
+		if {$var == -1} {
 			lappend lista_risorse "$fu 1" ;#$node_op"
 		}
 	}	
@@ -20,7 +25,7 @@ proc prima_analisi {} {
 
 #calcolo latency
 proc latency {lista_risorse} {
-	set lista[list]
+	set lista [list]
 	set da_incrementare [list]
 	set hu [list]   		;#lista con nodo e start time
 	set node_fu [list]		;#lista con nodo e unità funzionale
@@ -28,78 +33,59 @@ proc latency {lista_risorse} {
 	set l 1
 	set list_node [get_sorted_nodes]
 	while {$list_node != []} { 
-		foreach elem $in_corso {	
-			set node [lindex $elem 0]
-			set start_time [lindex $elem 1]
-			set fu_indx [lsearch -index 0 -all $node_fu $node]
-			set fu [lindex [lindex $node_fu $fu_indx] 1]
+		foreach elem $in_corso {				
+			set node [lindex $elem 0]				;#prendo il nodo
+			set start_time [lindex $elem 1]				;#prendo lo start_time
+			set fu_indx [lsearch -index 0 -all $node_fu $node]	
+			set fu [lindex [lindex $node_fu $fu_indx] 1]		;#prendo l'unità funzionale
 			set delay [get_attribute $fu delay]							
-			if { expr {$start_time+$delay} == $l} {					    
-				lappend hu "$nodo $start_time"								
-				set in_corso [lreplace $in_corso $fu_indx $fu_indx]				;#rimuovo nodo da in corso
-				
+			if { [expr {$start_time+$delay}] == $l} {					    
+				lappend hu "$node $start_time"								
+				set o_indx [lsearch $in_corso $elem]
+				set in_corso [lreplace $in_corso $o_indx $o_indx]		;#rimuovo nodo da in corso
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
-				if {fu_indx != -1 } {
-					set quantity [ expr {[lindex [lindex $lista_risorse fu_indx] 1] + 1}]
-					lreplace $lista_risorse op_idx op_idx "$risorsa $quantity"
-				}
-				else{
-					lappend lista_risorse $fu
+				if {$fu_indx != "" } {
+					set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
+					set quantity [ expr { $quantity + 1 }]
+					lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"
+				} else {
+					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 				}
 			}
-		}																;#da scrivere bene		
-		foreach node lista_node{	
-			#set start_time 1
-			set boolean 0
+		}									;#da scrivere bene		
+		foreach node $list_node {	
+			set boolean 1
 			foreach parent [get_attribute $node parents] {		;#da scrivere bene
-							
-						#se i parenti sono in hu						;#da scrivere bene	
-						#altrimenti uscire
-						#calcolare lo start_time maggiore
-					}
-			if {boolean == 1} {
+				if {[lsearch -index 0 $hu $parent] == -1} {
+					set boolean 0			
+						#se i parenti sono in hu
+				}
+			}
+			if {$boolean == 1} {
 				foreach elem $lista_risorse {									;#da scrivere bene  #impotizzare switch dei cicli 
 					set risorsa [lindex $elem 0]
 					set op_node [get_attribute $node operation]
 					set op_fu [get_attribute $risorsa operation]
-					if {$op_node == $op_fu}{
-						set node_indx [lindex $list_node $node]
+					if {$op_node == $op_fu} {
+						set node_indx [lsearch $list_node $node]
 						set list_node [lreplace $list_node $node_indx $node_indx]
 						lappend in_corso "$node $l"
 						lappend node_fu "$node $risorsa"
-						set op_idx [lsearch $lista_risorse $elem]
-						if {[lindex $elem 1] > 1}
+						set op_idx [lsearch  $lista_risorse $elem]
+						if {[lindex $elem 1] > 1} {
 							set quantity [ expr {[lindex $elem 1]-1}]
-							lreplace $lista_risorse op_idx op_idx "$risorsa $quantity" 
-						}				#rimuovo la risorsa dalla lista risorse
-						else {
-							set $lista_risorse [lreplace $lista_risorse op_idx op_idx]
+							lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity" 
+						} else {
+							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx]
+						
 						}
-					}
-					else {
+					} else {
 						lappend da_incrementare $op_node
 					}
 				}
 			}
 		}
-		
-		#foreach risorsa $lista_risorse									;#da scrivere bene  #impotizzare switch dei cicli 
-		#	foreach node lista_node										;#da scrivere bene
-		#		if risorsa==node										;#da scrivere bene
-		#			set start_time 1									;#da scrivere bene	
-		#			foreach parent [get_attribute $node parents] {		;#da scrivere bene
-							
-						#se i parenti sono in hu						;#da scrivere bene	
-						#altrimenti uscire
-						#calcolare lo start_time maggiore
-					}
-		#		if se i parenti non erano in hu uscire					;#da scrivere bene
-		#		#assegnare alla variabile risorsa_necessaria l'operazione del nodo figlio (quella che andremo ad aggiungere)
-		#		lappend node in corso 									;#da scrivere bene
-		#		lappend node node_fu											;#da scrivere bene
-		#		rimuovi la risorsa dalla lista risorse					;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
-				
 		incr l
 	}	
 	while {$in_corso != []} {
@@ -108,30 +94,31 @@ proc latency {lista_risorse} {
 			set start_time [lindex $elem 1]
 			set fu_indx [lsearch -index 0 -all $node_fu $node]
 			set fu [lindex [lindex $node_fu $fu_indx] 1]
-			set delay [get_attribute $fu delay]											;#da scrivere bene
-			if { expr {$start_time+$delay} == $l} {					   
-				lappend hu "$nodo $start_time"							
-				set in_corso [lreplace $in_corso $fu_indx $fu_indx]				;#rimuovo nodo da in corso
+			set delay [get_attribute $fu delay]
+			set cond [expr {$start_time + $delay}] 						;#da scrivere bene
+			if { $cond == $l} {					   
+				lappend hu "$node $start_time"		
+				set o_idx [lsearch $in_corso $elem]					
+				set in_corso [lreplace $in_corso $o_idx $o_idx]		;#rimuovo nodo da in corso
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
-				if {fu_indx != -1 } {
-					set quantity [ expr {[lindex [lindex $lista_risorse fu_indx] 1] + 1}]
-					lreplace $lista_risorse op_idx op_idx "$risorsa $quantity"
-				}
-				else{
-					lappend lista_risorse $fu
+				if {$fu_indx != "" } {
+					set quantity [ expr {[lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
+					lreplace $lista_risorse $op_idx  $op_idx "$risorsa $quantity"
+				} else {
+					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 				}				
 			}
 		}
-		incr l																;#
+		incr l													
 	}
 	lappend lista $hu 			;#"nodo start_time"
 	lappend lista $node_fu		;#"nodo fu"
-	lappend lista $risorse		;#"risorse n"
-	lappend da_incrementare
-	lappend l
-	return lista	
-}			
+	lappend lista $lista_risorse		;#"risorse n"
+	lappend lista $da_incrementare
+	lappend lista $l
+	return $lista	
+}	
 
 #abbiamo bisogno di una lista che tiene conto delle risorse disponibili al momento
 #sarebbe comodo creare una variabile che indica che tipo di risorsa si necessita aumentare (iquadrando quale operazione non si riesce ad eseguire)
