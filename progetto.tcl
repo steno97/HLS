@@ -209,6 +209,65 @@ proc analisi_area {lista_risorse max} {
 }
 
 
-proc main { }
-	prima_analisi
-	set lista_da_incrementare [list]
+############
+### MAIN ###
+############
+
+
+#SYNOPSIS: brave_opt –total_area $area_value$
+proc brave_opt args {
+ array set options {-total_area 0}
+ if { [llength $args] != 2 } {
+ return -code error "Use brave_opt with -total_area \$area_value\$"
+ }
+ foreach {opt val} $args {
+ if {![info exist options($opt)]} {
+ return -code error "unknown option \"$opt\""
+ }
+ set options($opt) $val
+ }
+ set total_area $options(-total_area)
+ puts $total_area
+ #clock seconds: returns the current time as an integer number of seconds:
+ set start_main [ clock seconds ] #timestamp at the start of the proc
+#main here (call to our fuction):
+
+#ritorna latenza?
+#fai sort delle 3 liste!
+#fai il conto del tempo @14,5 minuti stop algoritmo 
+
+set lista_risorse_da_incrementare [prima_analisi] #in the first analisys we set 1 fu per type
+#aumentare_risorse return values with best latency (smallest latency, <area max)
+set results_hls [aumentare_risorse $lista_risorse_da_incrementare $start_main $total_area]
+#final results:
+set schedule_time [lindex $results_hls 0]
+set node_per_fu [lindex $results_hls 1]
+set numb_of_fu [lindex $results_hls 2]
+set latency [lindex $results_hls 3]
+#schedule time
+foreach pair $schedule_time {
+ set node_id [lindex $pair 0]
+ set start_time [lindex $pair 1]
+ puts "Node: $node_id starts @ $start_time"
+}
+#operation per node
+foreach pair $node_per_op {
+ set node_id [lindex $pair 0]
+ set fu_id [lindex $pair 1]
+ puts "Node: $node_id , resource used: $fu_id"
+}
+#number of operations used
+foreach pair $numb_of_op {
+ set fu_id [lindex $pair 0]
+ set allocated [lindex $pair 1]
+ puts "Functional unit: $fu_id used $allocated times"
+}
+#non c'è da fare necessariamente!!!!!!!!!!!!
+puts "Latency $latency"
+
+return
+}
+#RETURN VALUES
+#1. list of pairs < node_id , start_time >
+#2. list of pairs < node_id , fu_id >
+#3. list of pairs < fu_id , #allocated >
