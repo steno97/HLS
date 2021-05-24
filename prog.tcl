@@ -323,3 +323,9 @@ proc optimize {max} {
 	}
 
 }
+
+proc main { max } {
+	global lista_generale
+	optimize $max
+	return $lista_generale
+}
