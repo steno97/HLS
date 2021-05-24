@@ -5,7 +5,7 @@ read_library ./data/RTL_libraries/RTL_library_multi-resources.txt
 
 
 #GLOBAL VARIABLES : 
-set lista_generale [list]
+global lista_generale [list]
 
 #####################################################################################################################################
 
@@ -25,6 +25,7 @@ proc prima_analisi { } {
 
 
 proc latency {lista_risorse} {
+	global lista_generale
 	set lista [list]
 	set da_incrementare [list]
 	set hu [list]   		;#lista con nodo e start time
@@ -115,11 +116,11 @@ proc latency {lista_risorse} {
 	lappend lista $hu 			;#"nodo start_time"
 	lappend lista $node_fu		;#"nodo fu"
 	lappend lista $lista_risorse		;#"risorse n"
-	#lappend lista $da_incrementare
-	#lappend lista $l
+	lappend lista $da_incrementare
+	lappend lista $l
 	set lista_generale $lista
-	return $l
-	#return $lista	
+	#return $l
+	return $lista	
 }	
 
 #######################################################################################################################################
@@ -144,4 +145,14 @@ proc analisi_area {lista_risorse max} {
 
 
 ########################################################################################################################################
-puts $lista_generale
+
+proc main_1 { } {
+	global lista_generale
+	set t [prima_analisi]
+	set r [latency $t]
+	set v [analisi_area [lindex $lista_generale 2] 300]
+	puts $t
+	puts $r
+	puts $v
+	puts $lista_generale 
+}
