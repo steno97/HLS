@@ -3,6 +3,12 @@ read_design ./data/DFGs/fir.dot
 read_library ./data/RTL_libraries/RTL_library_multi-resources.txt 
 
 
+
+#GLOBAL VARIABLES : 
+set lista_generale [list]
+
+#####################################################################################################################################
+
 proc prima_analisi { } {
 	set lista_risorse [list]
 	foreach node [get_sorted_nodes] {
@@ -15,6 +21,8 @@ proc prima_analisi { } {
 	}	
 	return $lista_risorse
 }
+######################################################################################################################################
+
 
 proc latency {lista_risorse} {
 	set lista [list]
@@ -107,7 +115,33 @@ proc latency {lista_risorse} {
 	lappend lista $hu 			;#"nodo start_time"
 	lappend lista $node_fu		;#"nodo fu"
 	lappend lista $lista_risorse		;#"risorse n"
-	lappend lista $da_incrementare
-	lappend lista $l
-	return $lista	
+	#lappend lista $da_incrementare
+	#lappend lista $l
+	set lista_generale $lista
+	return $l
+	#return $lista	
 }	
+
+#######################################################################################################################################
+
+#analisi area : takes as input the resources_used in the DFG implementation and returns the remaing area 
+
+proc analisi_area {lista_risorse max} {
+	set area 0
+	set bolean 0
+	foreach elem $lista_risorse {
+		set fu [lindex $elem 0]
+		set var [get_attribute $fu area]
+		set quantity [lindex $elem 1]
+		set area [expr {$var*$quantity+$area}]
+	}
+	set unused_area [expr {$max-$area}]
+	return $unused_area
+}
+
+
+
+
+
+########################################################################################################################################
+puts $lista_generale
