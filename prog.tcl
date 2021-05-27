@@ -181,7 +181,7 @@ proc optimize {max} {
     set first_iteration 1 				     ;#Usato per indicare che si sono anche aggiunte unità--- Caso speciale 
     set iteration 0
     while {$end_opt eq 0} {
-	set iteration [ expr { $iteration +1 } ]   
+		set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
         foreach elem $resources_to_incr {
@@ -190,22 +190,22 @@ proc optimize {max} {
             set op [lindex $elem 0]
             set used [lindex $elem 1]        
             set op_fus [get_lib_fus_from_op $op]       ;#returns the ids of the fus that can execute the operation
-	    set op_indx [lsearch -index 0 -all $resources_to_incr $op]
+			set op_indx [lsearch -index 0 -all $resources_to_incr $op]
            # puts "At iteration $iteration is being analyzed the op $op, with index $op_indx and fus associated $op_fus"
-	    if {$used eq 0} {                  ;#meaning that it is the first time analyzing this operation and so we check which of the fus associated to the operation
+			if {$used eq 0} {                  ;#meaning that it is the first time analyzing this operation and so we check which of the fus associated to the operation
                                              ;#is able to give better latancy with less area                        
                 ;#Searched the fu associated to the operation in order to got information about the used area 
-		set fu_indx 0
+				set fu_indx 0
                 foreach fu_j $lista_risorse {            
                     if { [get_attribute [lindex $fu_j 0] operation] eq $op } {  
-                         set fu [lindex $fu_j 0]
+						set fu [lindex $fu_j 0]
 			 #puts "FU initally associate to the operation is $fu" 
-			 break
+						break
                     } else {
                         set fu_indx [expr {$fu_indx + 1}]
                     } 
                 }
-		set initial_fu $fu   
+				set initial_fu $fu   
                 set latency_fu $l                           ;#intial latency with the fu already used in lista_risorse is l--> Ma mica è valido sempre, solo nella prima iterazione |!!!!! O meglio mi vale se updato l di continuo 
                 set area_fu [get_attribute $fu area]
                 set remaining_area [expr { $unused_area + $area_fu}]
@@ -213,9 +213,9 @@ proc optimize {max} {
                 # In the first step is analyzed which version of the fus of the operation gives the better latency with less area   
                 # Simply tested all of them up to when is found the one that gives less latency with less area 
                 set impl_check 0                                  ;#boolean variable, set to 1 if there's enough area to implement one of the fu associated to the op
-		foreach fu_i $op_fus {                      ;#fu_i indicate the i-esim fu that can perform this operation    
-                   if { $fu_i != $initial_fu } {    
-                       set area_fu_i [get_attribute $fu_i area]
+				foreach fu_i $op_fus {                      ;#fu_i indicate the i-esim fu that can perform this operation    
+					if { $fu_i != $initial_fu } {    
+						set area_fu_i [get_attribute $fu_i area]
                         if {$area_fu_i < $remaining_area} {                ;# Meaning that the fu_i can be implemented 
                             #Is evaluated the latency by substituing the fu with the tested one (fu_i)
                             set lista_risorse_to_test [lreplace $lista_risorse_to_test $fu_indx $fu_indx "$fu_i 1"]           
@@ -231,7 +231,7 @@ proc optimize {max} {
                                 lreplace $latency_optimized $op_indx $op_indx "$fu_i $latency_fu_i"
                             }
                         }
-		   }	 
+					}	 
                 }
 		
                 if {$impl_check eq 0} {
@@ -240,14 +240,14 @@ proc optimize {max} {
                      #set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
                	     ;#Meaning that the actual fu used is or the better one in latency or area (Maybe beacuse is the only one associated
 		     ;#or the other fus associated to the operation have an area higher than the remaining one 
-		     puts "The initial fu used is the one that gives better latency,setting used to 1 and op_indx $op_indx" 
-		     lreplace $resources_to_incr $op_indx $op_indx {$op 1}               ;#set used to 1 since now the operation has been analyzed
-		     puts "updated resoruces to incr are : $resources_to_incr"	
+					puts "The initial fu used is the one that gives better latency,setting used to 1 and op_indx $op_indx" 
+					lreplace $resources_to_incr $op_indx $op_indx "$op 1"               ;#set used to 1 since now the operation has been analyzed
+					puts "updated resoruces to incr are : $resources_to_incr"	
 ;#NOTA  DI REGOLA DOVREI CHECKARE SE L'OPERAZIONE È ANCHE RICHIESTA O NO, se non la devo eliinare 
 		;#puts "Set used to 1 with operation $op since not enough area to implement a faster fu or op has a single fu" 
-		 }            
-            } else {            ;#meaning that in this case we have to increment a resource and so found fu associated to the operation required that gives the best latency 
-                   set first_iteration 0
+			}            
+         } else {            ;#meaning that in this case we have to increment a resource and so found fu associated to the operation required that gives the best latency 
+           set first_iteration 0
 		   set impl_check 0                                  ;#boolean variable, set to 1 if there's enough area to implement one of the fu associated to the op
                    #Simply searched for them all up to when is found the one that gives less latency with less area 
                     foreach fu_i $op_fus {                      ;#fu_i indicate the i-esim fu that can perform this operation    
