@@ -345,12 +345,12 @@ proc optimize {max} {
             	set op_indx [lsearch -index 0 -all $resources_to_incr $op] 
             	set fu_indx [lsearch -index 0 -all $lista_risorse $fu_to_add] 
             	puts "Adding the fu $fu_to_add associated to operation $op in iteration $iteration"
-            	if { $fu_indx != -1 } {        ;#so if already used this fu then is simply incremented the number
+            	if { $fu_indx != "" } {        ;#so if already used this fu then is simply incremented the number
                 	set incr_number_fu [ expr { [lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
-                	set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu_to_add $incr_number_fu"]		;#CONTROLLARE !!
+			set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu_to_add $incr_number_fu"]		;#CONTROLLARE !!
             	} else {                     ;#if never used this fu then it is added in lista_risorse
                 	;#added the fu
-                	lista_risorse [lappend lista_risorse "$fu_to_add 1"]
+                	set lista_risorse [lappend lista_risorse "$fu_to_add 1"]
                 	;#checked the "used" value associated to the operation 
                 	if { [lindex $resources_to_incr $op_indx 1] eq 0} {
                      	resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
@@ -360,7 +360,7 @@ proc optimize {max} {
             	latency $lista_risorse				;#lunched the latency function in order to get the updated list "da_incrementare"
             	set remove 1
 	    	puts "At iteration $iteration the required resources are $da_incrementare"
-            	foreach op_required $da_incrementare{		
+            	foreach op_required $da_incrementare {		
                 	if {$op_required eq $op} {			;#The operation is stil required 
                     	set remove 0
 		    	break                                
