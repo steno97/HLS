@@ -103,8 +103,7 @@ proc latency {lista_risorse} {
 						
 						}
 					break
-					} else { lappend da_incrementare1 $op_node
-						}
+					} else { lappend da_incrementare1 $op_node }
 				}
 			} 
 		}
@@ -151,7 +150,7 @@ proc latency {lista_risorse} {
 #analisi area : takes as input the resources_used in the DFG implementation and returns the remaing area 
 
 proc analisi_area {lista_risorse max} {
-	global da_incrementare
+	
 	set area 0
 	set bolean 0
 	foreach elem $lista_risorse {
@@ -172,7 +171,7 @@ proc analisi_area {lista_risorse max} {
 
 
 proc optimize {max} {
-     
+    global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
     # "used" is a bool type that says if it is the first time analyzing the operation 
