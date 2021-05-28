@@ -7,6 +7,8 @@ read_library ./data/RTL_libraries/RTL_library_multi-resources.txt
 #GLOBAL VARIABLES : 
 global lista_generale [list]
 
+global da_incrementare [list]
+
 #####################################################################################################################################
 
 proc prima_analisi { } {
@@ -25,7 +27,10 @@ proc prima_analisi { } {
 
 
 proc latency {lista_risorse} {
+	puts "lista risorse"
 	global lista_generale
+	global da_incrementare
+	set da_incrementare1 [list]
 	set lista [list]
 	set hu [list]   		;#lista con nodo e start time
 	set node_fu [list]		;#lista con nodo e unità funzionale
@@ -36,37 +41,54 @@ proc latency {lista_risorse} {
 		foreach elem $in_corso {				
 			set node [lindex $elem 0]				;#prendo il nodo
 			set start_time [lindex $elem 1]				;#prendo lo start_time
-			set fu_indx [lsearch -index 0 -all $node_fu $node]	
+			puts "mezzo"
+			set fu_indx [lsearch -index 0 -all $node_fu $node]
+			puts "$fu_indx"
+			puts "$node_fu"
+			puts "$node"
+			puts "mezzo1"	
 			set fu [lindex [lindex $node_fu $fu_indx] 1]		;#prendo l'unità funzionale
-			set delay [get_attribute $fu delay]							
-			if { [expr {$start_time+$delay}] == $l} {					    
+			puts "$fu"
+			
+			set delay [get_attribute $fu delay]
+			puts "fine?"							
+			if { [expr {$start_time+$delay}] == $l} {					   
 				lappend hu "$node $start_time"								
 				set o_indx [lsearch $in_corso $elem]
 				set in_corso [lreplace $in_corso $o_indx $o_indx]		;#rimuovo nodo da in corso
+				puts "inizio"
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
+				puts "$fu_indx"
+				puts "$lista_risorse"
 				if {$fu_indx != "" } {
 					set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
 					set quantity [ expr { $quantity + 1 }]
-					lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"
+					lreplace $lista_risorse $fu_indx $fu_indx "$risorsa $quantity"
+					puts "qui?"
 				} else {
 					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 				}
 			}
-		}									;#da scrivere bene		
+		}		
+		puts "$list_node"
 		foreach node $list_node {	
+			puts "$node"
 			set boolean 1
-			foreach parent [get_attribute $node parents] {		;#da scrivere bene
+			foreach parent [get_attribute $node parents] {		
 				if {[lsearch -index 0 $hu $parent] == -1} {
 					set boolean 0			
-						#se i parenti sono in hu
 				}
 			}
+			puts "iterazione"
 			if {$boolean == 1} {
-				foreach elem $lista_risorse {									;#da scrivere bene  #impotizzare switch dei cicli 
+				puts "$lista_risorse"
+				foreach elem $lista_risorse { 
+					puts "elem: $elem"
 					set risorsa [lindex $elem 0]
 					set op_node [get_attribute $node operation]
 					set op_fu [get_attribute $risorsa operation]
+					puts "muori"
 					if {$op_node == $op_fu} {
 						set node_indx [lsearch $list_node $node]
 						set list_node [lreplace $list_node $node_indx $node_indx]
@@ -80,12 +102,16 @@ proc latency {lista_risorse} {
 							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx]
 						
 						}
-					} 
+					break
+					} else { lappend da_incrementare1 $op_node
+						}
 				}
-			}
+			} 
 		}
+		puts "qui ci sei?"
 		incr l
-	}	
+	}
+	puts "ci arrivi?"	
 	while {$in_corso != []} {
 		foreach elem $in_corso {	
 			set node [lindex $elem 0]
@@ -101,7 +127,7 @@ proc latency {lista_risorse} {
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
 				if {$fu_indx != "" } {
 					set quantity [ expr {[lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
-					lreplace $lista_risorse $op_idx  $op_idx "$risorsa $quantity"
+					lreplace $lista_risorse $fu_indx  $fu_indx "$risorsa $quantity"
 				} else {
 					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
@@ -114,6 +140,7 @@ proc latency {lista_risorse} {
 	lappend lista $node_fu		;#"nodo fu"
 	lappend lista $lista_risorse		;#"risorse n"
 	#lappend lista $l
+	set da_incrementare $da_incrementare1
 	set lista_generale $lista
 	return $l
 	#return $lista	
@@ -124,6 +151,7 @@ proc latency {lista_risorse} {
 #analisi area : takes as input the resources_used in the DFG implementation and returns the remaing area 
 
 proc analisi_area {lista_risorse max} {
+	global da_incrementare
 	set area 0
 	set bolean 0
 	foreach elem $lista_risorse {
@@ -271,7 +299,8 @@ proc optimize {max} {
                             }
 			    puts "lista : $lista_risorse_to_test "
                             set latency_fu_i [ latency $lista_risorse_to_test ];
-                            if { [expr { [expr {$latency_fu_i < $latency_fu}] || [ expr { [expr {$latency_fu_i == $latency_fu}] && [expr {$area_fu_i < $area_fu} ] } ] } ] == 1 } {     
+         		    puts "errore in latency"                  
+				 if { [expr { [expr {$latency_fu_i < $latency_fu}] || [ expr { [expr {$latency_fu_i == $latency_fu}] && [expr {$area_fu_i < $area_fu} ] } ] } ] == 1 } {     
                                 # substituing the old fu with the tested one 
                                 set fu $fu_i
                                 set latency_fu $latency_fu_i 
