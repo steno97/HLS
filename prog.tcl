@@ -143,7 +143,6 @@ proc analisi_area {lista_risorse max} {
 ########################################################################################################################################
 
 
-
 proc optimize {max} {
      
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
@@ -228,7 +227,7 @@ proc optimize {max} {
                                 set fu $fu_i
                                 set latency_fu $latency_fu_i 
                                 #updating the latency list
-                                lreplace $latency_optimized $op_indx $op_indx "$fu_i $latency_fu_i"
+                               set latency_optimized [lreplace $latency_optimized $op_indx $op_indx "$fu_i $latency_fu_i"]
                             }
                         }
 		   }	 
@@ -240,9 +239,10 @@ proc optimize {max} {
                      #set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
                	     ;#Meaning that the actual fu used is or the better one in latency or area (Maybe beacuse is the only one associated
 		     ;#or the other fus associated to the operation have an area higher than the remaining one 
-		     puts "The initial fu used is the one that gives better latency,setting used to 1 and op_indx $op_indx" 
-		     lreplace $resources_to_incr $op_indx $op_indx {$op 1}               ;#set used to 1 since now the operation has been analyzed
-		     puts "updated resoruces to incr are : $resources_to_incr"	
+		     puts "The initial fu used is the one that gives better latency,setting used to 1 and op_indx $op_indx and op $op" 
+		     set test 1
+		     set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op $test"]               ;#set used to 1 since now the operation has been analyzed
+		     puts "Updated resoruces to incr are : $resources_to_incr"	
 ;#NOTA  DI REGOLA DOVREI CHECKARE SE L'OPERAZIONE È ANCHE RICHIESTA O NO, se non la devo eliinare 
 		;#puts "Set used to 1 with operation $op since not enough area to implement a faster fu or op has a single fu" 
 		 }            
@@ -256,20 +256,27 @@ proc optimize {max} {
                             ;#added the fu in the list lista_risorse_to_test and evaluated the latency
                             set impl_check 1                             ;#impl_check 1 if exist at least one fu that can be implemented with remaing area
                             set fu_indx [lsearch -index 0 -all $lista_risorse $fu_i]
-			    if {fu_indx != -1} {        ;#so if already used this fu then is simply incremented the number 
-                                set incr_number_fu [ expr { [lindex $lista_risorse $fu_indx 1] + 1}]
+			    puts "the $fu_i is in position $fu_indx"	
+			    if {$fu_indx > -1} {        ;#so if already used this fu then is simply incremented the number 
+                                set actual_number_fu  [lindex [lindex $lista_risorse $fu_indx] 1]
+				puts "Actual number $actual_number_fu"
+				set incr_number_fu [ expr { $actual_number_fu + 1} ]
+				puts "increased number $incr_number_fu"
                                 set lista_risorse_to_test $lista_risorse                                            ;#reset of the list lista_risorse_to_test
                                 set lista_risorse_to_test [lreplace $lista_risorse_to_test $fu_indx $fu_indx "$fu_i $incr_number_fu"]
                             } else {      ;#added the fu 
-                                lappend lista_risorse_to_test "$fu_i 1"                     
+				puts "I'm adding the fu"
+                                set lista_risorse_to_test $lista_risorse                                            ;#reset of the list lista_risorse_to_test
+                                set lista_risorse_to_test [lappend lista_risorse_to_test "$fu_i 1"]                     
                             }
+			    puts "lista : $lista_risorse_to_test "
                             set latency_fu_i [ latency $lista_risorse_to_test ];
                             if { [expr { [expr {$latency_fu_i < $latency_fu}] || [ expr { [expr {$latency_fu_i == $latency_fu}] && [expr {$area_fu_i < $area_fu} ] } ] } ] == 1 } {     
                                 # substituing the old fu with the tested one 
                                 set fu $fu_i
                                 set latency_fu $latency_fu_i 
                                 #updating the latency list
-                                lreplace $latency_optimized $op_indx $op_indx "$fu_i $latency_fu_i"
+                               set latency_optimized [ lreplace $latency_optimized $op_indx $op_indx "$fu_i $latency_fu_i"]
                             }
                         }
                     }
@@ -310,15 +317,15 @@ proc optimize {max} {
             	set op_indx [lsearch -index 0 -all $resources_to_incr $op] 
             	set fu_indx [lsearch -index 0 -all $lista_risorse $fu_to_add] 
             	puts "Adding the fu $fu_to_add associated to operation $op in iteration $iteration"
-            	if {$fu_indx != -1} {        ;#so if already used this fu then is simply incremented the number
-                	set incr_number_fu [ expr { [lindex $lista_risorse $fu_indx 1] + 1}]
+            	if { $fu_indx != -1 } {        ;#so if already used this fu then is simply incremented the number
+                	set incr_number_fu [ expr { [lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
                 	set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu_to_add $incr_number_fu"]		;#CONTROLLARE !!
             	} else {                     ;#if never used this fu then it is added in lista_risorse
                 	;#added the fu
-                	lappend lista_risorse "$fu_to_add 1"
+                	lista_risorse [lappend lista_risorse "$fu_to_add 1"]
                 	;#checked the "used" value associated to the operation 
                 	if { [lindex $resources_to_incr $op_indx 1] eq 0} {
-                     	lreplace $resources_to_incr $op_indx $op_indx "$op 1"               ;#set used to 1 since now the operation has been analyzed
+                     	resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
                 	}
             	}
             ;#lunched the scheduling with the new lista_risorse and evaluated the operations required (that are in the list da_incrementare) 
@@ -339,7 +346,7 @@ proc optimize {max} {
 	    ;#reset of the latency in the list latency_optimized 
     	     	set index 0
 	     	foreach elem $latency_optimized { 
-        		lreplace $latency_optimized $index $index "[lindex $latency_optimized $index 0] $l"                 
+        		set latency_optimized [lreplace $latency_optimized $index $index "[lindex $latency_optimized $index 0] $l"]                 
 			;#by adding a fu associated to the operation needed 
         		set index [expr {$index+1}]
    	      	}		     
@@ -353,6 +360,7 @@ proc optimize {max} {
  
 puts "optimization completed and associated lista_risorse is $lista_risorse"
 }
+
 
 proc main { max } {
 	global lista_generale
