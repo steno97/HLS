@@ -148,13 +148,12 @@ proc analisi_area {lista_risorse max} {
 
 ########################################################################################################################################
 
-
 proc optimize {max} {
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
     # "used" is a bool type that says if it is the first time analyzing the operation 
-	set lista_risorse [prima_analisi]
+    set lista_risorse [prima_analisi]
     # In the first iteration the list resources_to_incr is composed of all the slowest fus of the resources needed to implement the DFG operations
     # In the first step so will be analyzed if by substituing them with their faster versions, area allowing, the overall latency improve
     set resources_to_incr [list]
@@ -179,6 +178,8 @@ proc optimize {max} {
     set end_opt 0                                    ;#when end_opt = 1 then the optimal solution using this alogorithm has been found 
     set first_iteration 1 				     ;#Usato per indicare che si sono anche aggiunte unità--- Caso speciale 
     set iteration 0
+    puts "START OF THE OPTIMIZATION PHASE"
+    puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
     while {$end_opt eq 0} {
 	set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
@@ -198,24 +199,22 @@ proc optimize {max} {
                 foreach fu_j $lista_risorse {            
                     if { [get_attribute [lindex $fu_j 0] operation] eq $op } {  
                          set fu [lindex $fu_j 0]
-			 #puts "FU initally associate to the operation is $fu" 
 			 break
                     } else {
                         set fu_indx [expr {$fu_indx + 1}]
                     } 
                 }
 		set initial_fu $fu   
-                set latency_fu $l                           ;#intial latency with the fu already used in lista_risorse is l--> Ma mica è valido sempre, solo nella prima iterazione |!!!!! O meglio mi vale se updato l di continuo 
+                set latency_fu $l                           
                 set area_fu [get_attribute $fu area]
                 set remaining_area [expr { $unused_area + $area_fu}]
-		#puts "Area of the fu is $area_fu and area that can be used is $remaining_area" 
                 # In the first step is analyzed which version of the fus of the operation gives the better latency with less area   
                 # Simply tested all of them up to when is found the one that gives less latency with less area 
                 set impl_check 0                                  ;#boolean variable, set to 1 if there's enough area to implement one of the fu associated to the op
 		foreach fu_i $op_fus {                      ;#fu_i indicate the i-esim fu that can perform this operation    
                    if { $fu_i != $initial_fu } {    
                        set area_fu_i [get_attribute $fu_i area]
-                        if {$area_fu_i < $remaining_area} {                ;# Meaning that the fu_i can be implemented 
+                       if {$area_fu_i < $remaining_area} {                ;# Meaning that the fu_i can be implemented 
                             #Is evaluated the latency by substituing the fu with the tested one (fu_i)
                             set lista_risorse_to_test [lreplace $lista_risorse_to_test $fu_indx $fu_indx "$fu_i 1"]           
                             set latency_fu_i [ latency $lista_risorse_to_test ] 
@@ -229,22 +228,30 @@ proc optimize {max} {
                                 #updating the latency list
                                set latency_optimized [lreplace $latency_optimized $op_indx $op_indx "$fu_i $latency_fu_i"]
                             }
-                        }
+                       }
 		   }	 
                 }
 		
                 if {$impl_check eq 0} {
-                    ;#meaning that do no exist a fu associated to the operation that can be implemented 
-                     #set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx]           ;#removed the operation from resources_to_incr
-                     #set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
-               	     ;#Meaning that the actual fu used is or the better one in latency or area (Maybe beacuse is the only one associated
-		     ;#or the other fus associated to the operation have an area higher than the remaining one 
-		     set test 1
-		     set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op $test"]               ;#set used to 1 since now the operation has been analyzed
-;#NOTA  DI REGOLA DOVREI CHECKARE SE L'OPERAZIONE È ANCHE RICHIESTA O NO, se non la devo eliinare 
-		;#puts "Set used to 1 with operation $op since not enough area to implement a faster fu or op has a single fu" 
-		 }            
-            } else {            ;#meaning that in this case we have to increment a resource and so found fu associated to the operation required that gives the best latency 
+               	    	;#Meaning that the actual fu used is or the better one in latency or area (Maybe beacuse is the only one associated
+		    	;#or the other fus associated to the operation have an area higher than the remaining one 
+			set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
+            		;#since there's not a better version of the fu associated tot the op. that can be implemented, check if op is required
+			;#to be incremented or not
+			set remove 1
+	    		foreach op_required $da_incrementare {		
+                		if {$op_required eq $op} {			;#The operation is stil required 
+                    			set remove 0
+		    			break                                
+                		}
+            		}
+            		if {$remove eq 1} {          ;#meaning that the operation associated to the added fu is no more required by the scheduler
+                    		puts "Removing operation $op from resources_to_incr since no more required "
+		    		set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx]           ;#removed the operation from resources_to_incr
+                    		set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
+			}	            
+            	}
+	    } else {            ;#meaning that in this case we have to increment a resource and so found fu associated to the operation required that gives the best latency 
                    set first_iteration 0
 		   set impl_check 0                                  ;#boolean variable, set to 1 if there's enough area to implement one of the fu associated to the op
                    #Simply searched for them all up to when is found the one that gives less latency with less area 
@@ -257,13 +264,13 @@ proc optimize {max} {
 			   if {$fu_indx > -1} {        ;#so if already used this fu then is simply incremented the number 
                                 set actual_number_fu  [lindex [lindex $lista_risorse $fu_indx] 1]
 				set incr_number_fu [ expr { $actual_number_fu + 1} ]
-				                set lista_risorse_to_test $lista_risorse                                            ;#reset of the list lista_risorse_to_test
+				set lista_risorse_to_test $lista_risorse                                            ;#reset of the list lista_risorse_to_test
                                 set lista_risorse_to_test [lreplace $lista_risorse_to_test $fu_indx $fu_indx "$fu_i $incr_number_fu"]
                             } else {      ;#added the fu 
-				                set lista_risorse_to_test $lista_risorse                                            ;#reset of the list lista_risorse_to_test
+				set lista_risorse_to_test $lista_risorse                                            ;#reset of the list lista_risorse_to_test
                                 set lista_risorse_to_test [lappend lista_risorse_to_test "$fu_i 1"]                     
                             }
-			                set latency_fu_i [ latency $lista_risorse_to_test ];
+			 set latency_fu_i [ latency $lista_risorse_to_test ];
          		 if { [expr { [expr {$latency_fu_i < $latency_fu}] || [ expr { [expr {$latency_fu_i == $latency_fu}] && [expr {$area_fu_i < $area_fu} ] } ] } ] == 1 } {     
                                 # substituing the old fu with the tested one 
                                 set fu $fu_i
@@ -279,10 +286,8 @@ proc optimize {max} {
                      set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
                  }     
             }
-	;#incresed the index of the elem
-	;#set elem_indx [expr {$elem_indx +1}]
         }
-	     ;#At the end of this loop in the list "latency_optimized" is contained a list of latency due to changing/adding a fu of an operation.
+	;#At the end of this loop in the list "latency_optimized" is contained a list of latency due to changing/adding a fu of an operation.
         ;#Then is parse the list "latency_optimized" and found the configuration that give the better latency
         ;#When found then it is added to lista_risorse, if no improvent due to changing/adding of a fu then the optimization finisheds
         set success 0 
@@ -290,63 +295,77 @@ proc optimize {max} {
             if { [lindex $elem 1] < $l}  {
 			set success 1
               		#updated the latency
-                	set $l [lindex $elem 1]
+                	set l [lindex $elem 1]
                 	#updated the fu to add
-                	set fu_to_add [lindex $elem 0]
-            		    	
+                	set fu_to_add [lindex $elem 0]		    	
 	    } 
         } 
         if { $success eq 0 } {       ;#so if no change determines an optimization of the delay, then has been reached the optimal solution
 		if { $first_iteration eq 0} {		; #PER IL CASO PARTICOLARE, ohterwise will keep iterating 
 	    	set end_opt 1				;#Semplicemente alla prox iterazione si spera che sia tutto usato e quindi aggiunga solo fu
-	    	 }
-        } else {
-	   
-          	  ;#retrieved the operation associated to the fu 
-            	set op [get_attribute $fu_to_add operation]      ;#got the operation from the fu
+		} else {
+			puts "First iteration caso particolare"
+		}
+	} else {   
+          	;#retrieved the operation associated to the fu 
+          	set op [get_attribute $fu_to_add operation]      ;#got the operation from the fu
             	set op_indx [lsearch -index 0 -all $resources_to_incr $op] 
             	set fu_indx [lsearch -index 0 -all $lista_risorse $fu_to_add] 
             	if { $fu_indx != "" } {        ;#so if already used this fu then is simply incremented the number
                 	set incr_number_fu [ expr { [lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
-			set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu_to_add $incr_number_fu"]		;#CONTROLLARE !!
-            	} else {                     ;#if never used this fu then it is added in lista_risorse
-                	;#added the fu
-                	set lista_risorse [lappend lista_risorse "$fu_to_add 1"]
+			set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu_to_add $incr_number_fu"]				
+			puts "Updated number of $fu_to_add associated to the operation $op is $incr_number_fu"
+		} else {                     
                 	;#checked the "used" value associated to the operation 
                 	if { [lindex $resources_to_incr $op_indx 1] eq 0} {
-                     	resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
-                	}
-            	}
+                     		resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
+                		;#updated the fu associated to the operation
+                        	set fu_to_update_indx 0
+				foreach fu_j $lista_risorse {            
+                         		if { [get_attribute [lindex $fu_j 0] operation] eq $op } {  
+                         		set fu_to_update [lindex $fu_j 0]
+					 break
+                    			} else {
+                        		set fu_to_update_indx [expr {$fu_to_update_indx + 1}]
+                    			}			 
+                		}
+			set lista_risorse [lreplace $lista_risorse $fu_to_update_indx $fu_to_update_indx "fu_to_add 1"] 
+	                puts "The fu $fu_to_update associated to operation $op has been replaced with $fu_to_add"
+			} else { ;#simply added in lista risorse 
+            			lappend lista_risorse "$fu_to_add 1"
+				puts "Added the fu $fu_to_add associated to operation $op in lista_risorse"
+			}
+		}
             ;#lunched the scheduling with the new lista_risorse and evaluated the operations required (that are in the list da_incrementare) 
-            	latency $lista_risorse				;#lunched the latency function in order to get the updated list "da_incrementare"
+    		set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area used 
+		puts "Updated lista risorse is $lista_risorse with latency $l and remaing area to use $unused_area at iteration $iteration"
+		latency $lista_risorse				;#lunched the latency function in order to get the updated list "da_incrementare"
             	set remove 1
-	    		foreach op_required $da_incrementare {		
+	    	foreach op_required $da_incrementare {		
                 	if {$op_required eq $op} {			;#The operation is stil required 
-                    	set remove 0
-		    	break                                
+                    		set remove 0
+		    		break                                
                 	}
             	}
             	if {$remove eq 1} {          ;#meaning that the operation associated to the added fu is no more required by the scheduler
-                    set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx]           ;#removed the operation from resources_to_incr
+                    puts "Removing operation $op from resources_to_incr since no more required "
+		    set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx]           ;#removed the operation from resources_to_incr
                     set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
-  	    	 	}	
+  	    	 }	
 	    ;#reset of the latency in the list latency_optimized 
     	     	set index 0
 	     	foreach elem $latency_optimized { 
         		set latency_optimized [lreplace $latency_optimized $index $index "[lindex $latency_optimized $index 0] $l"]                 
 			;#by adding a fu associated to the operation needed 
         		set index [expr {$index+1}]
-   	      	}		     
-		puts "Updated latency_optimized at iteration $iteration is $latency_optimized"		                                         
-     }
-
-	puts "The new lista risorse is $lista_risorse"
+   	      	}
 	puts "The new resources to increment are $resources_to_incr"
-	puts "************************************************************************"
+	puts "**********************************************************************************************************"		                                         
+     }
+ }
+ puts "Optimization completed and associated lista_risorse is $lista_risorse"
 }
- 
-puts "optimization completed and associated lista_risorse is $lista_risorse"
-}
+
 
 
 proc main { max } {
