@@ -15,12 +15,13 @@ proc asap {} {
         set start_time $parent_end_time
       }
     }
+    set parent_op [get_attribute $node operation]
     set fu [get_lib_fu_from_op $parent_op]
     set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
       if {$fu_indx != "" } {
 	set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
 	set quantity [ expr { $quantity + 1 }]
-	lreplace $lista_risorse $fu_indx $fu_indx "$fu $quantity"
+	set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu $quantity"]
 	} else {
 		lappend lista_risorse "$fu 1"
 		lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
