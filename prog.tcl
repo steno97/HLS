@@ -50,8 +50,10 @@ proc latency {lista_risorse} {
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
 				if {$fu_indx != "" } {
 					set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
+					puts "quantità prima di incrementare $quantity"
 					set quantity [ expr { $quantity + 1 }]
 					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$risorsa $quantity"]
+					puts "quantità dopo di incrementare $quantity"
 				} else {
 					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
@@ -77,8 +79,11 @@ proc latency {lista_risorse} {
 						lappend node_fu "$node $risorsa"
 						set op_idx [lsearch  $lista_risorse $elem]
 						if {[lindex $elem 1] > 1} {
-							set quantity [ expr {[lindex $elem 1]-1}]
+							set quantity [lindex $elem 1]
+							puts "quantità prima di decrementare $quantity"
+							set quantity [ expr {$quantity-1}]
 							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"] 
+							puts "quantità dopo decrementare $quantity"
 						} else {
 							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx]
 						
@@ -104,8 +109,10 @@ proc latency {lista_risorse} {
 				set in_corso [lreplace $in_corso $o_idx $o_idx]		;#rimuovo nodo da in corso
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
 				if {$fu_indx != "" } {
+					puts "quantità prima di incrementare $quantity"
 					set quantity [ expr {[lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
 					set lista_risorse [lreplace $lista_risorse $fu_indx  $fu_indx "$risorsa $quantity"]
+					puts "quantità dopo di incrementare $quantity"
 				} else {
 					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
