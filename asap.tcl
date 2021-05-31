@@ -14,7 +14,9 @@ proc asap {} {
       if { $parent_end_time > $start_time } {
         set start_time $parent_end_time
       }
-      set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
+    }
+    set fu [get_lib_fu_from_op $parent_op]
+    set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
       if {$fu_indx != "" } {
 	set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
 	set quantity [ expr { $quantity + 1 }]
@@ -23,7 +25,6 @@ proc asap {} {
 		lappend lista_risorse "$fu 1"
 		lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 	}
-    }
     lappend node_start_time "$node $start_time"
   }
   lappend lista $lista_risorse
