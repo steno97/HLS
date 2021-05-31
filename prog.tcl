@@ -27,6 +27,7 @@ proc prima_analisi { } {
 
 
 proc latency {lista_risorse} {
+	puts "le risorse sono: $lista_risorse"
 	global lista_generale
 	global da_incrementare
 	set da_incrementare1 [list]
@@ -50,10 +51,12 @@ proc latency {lista_risorse} {
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
 				if {$fu_indx != "" } {
 					set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
-					puts "quantità prima di incrementare $quantity"
+					#puts "$lista_risorse"
+					#puts "quantità prima di incrementare $quantity"
 					set quantity [ expr { $quantity + 1 }]
-					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$risorsa $quantity"]
-					puts "quantità dopo di incrementare $quantity"
+					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu $quantity"]
+					#puts "dopo primo ciclo dectremento: $lista_risorse"
+					#puts "quantità dopo di incrementare $quantity"
 				} else {
 					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
@@ -80,10 +83,12 @@ proc latency {lista_risorse} {
 						set op_idx [lsearch  $lista_risorse $elem]
 						if {[lindex $elem 1] > 1} {
 							set quantity [lindex $elem 1]
-							puts "quantità prima di decrementare $quantity"
+							#puts "$lista_risorse"
+							#puts "quantità prima di decrementare $quantity"
 							set quantity [ expr {$quantity-1}]
 							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"] 
-							puts "quantità dopo decrementare $quantity"
+							#puts "dopo ciclo in mezzo: $lista_risorse"
+							#puts "quantità dopo decrementare $quantity"
 						} else {
 							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx]
 						
@@ -109,10 +114,12 @@ proc latency {lista_risorse} {
 				set in_corso [lreplace $in_corso $o_idx $o_idx]		;#rimuovo nodo da in corso
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
 				if {$fu_indx != "" } {
-					puts "quantità prima di incrementare $quantity"
+					#puts "quantità prima di incrementare $quantity"
+					#puts "$lista_risorse"
 					set quantity [ expr {[lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
-					set lista_risorse [lreplace $lista_risorse $fu_indx  $fu_indx "$risorsa $quantity"]
-					puts "quantità dopo di incrementare $quantity"
+					set lista_risorse [lreplace $lista_risorse $fu_indx  $fu_indx "$fu $quantity"]
+					#puts "dopo ultimo ciclo: $lista_risorse"
+					#puts "quantità dopo di incrementare $quantity"
 				} else {
 					lappend lista_risorse "$fu 1"
 					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
@@ -121,6 +128,7 @@ proc latency {lista_risorse} {
 		}
 		incr l													
 	}
+	puts $l
 	lappend lista $hu 			;#"nodo start_time"
 	lappend lista $node_fu		;#"nodo fu"
 	lappend lista $lista_risorse		;#"risorse n"
@@ -371,6 +379,7 @@ proc optimize {max} {
      }
  }
  puts "Optimization completed and associated lista_risorse is $lista_risorse"
+ latency $lista_risorse	
 }
 
 
