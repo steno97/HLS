@@ -163,7 +163,7 @@ proc analisi_area {lista_risorse max} {
 
 ########################################################################################################################################
 
-proc optimize {max} {
+proc optimize {start_time max} {
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
@@ -195,7 +195,9 @@ proc optimize {max} {
     set iteration 0
     puts "START OF THE OPTIMIZATION PHASE"
     puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
-    while {$end_opt eq 0} {
+    set time_passed 0
+    while { [expr { [expr {$time_passed < 870}] && [expr {$end_opt ==0} ] ==1 } ]  } { 
+    #while {$end_opt eq 0} {
 	set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
@@ -377,9 +379,11 @@ proc optimize {max} {
 	puts "The new resources to increment are $resources_to_incr"
 	puts "**********************************************************************************************************"		                                         
      }
+     set time_passed [expr { [ clock seconds ]- $start_time } ]
  }
  puts "Optimization completed and associated lista_risorse is $lista_risorse"
  latency $lista_risorse	
+ 
 }
 
 
@@ -388,4 +392,55 @@ proc main { max } {
 	global lista_generale
 	optimize $max
 	return $lista_generale
+}
+########################################################################
+### MAIN ###############################################################
+########################################################################
+
+
+#SYNOPSIS: brave_opt –total_area $area_value$
+proc brave_opt args {
+ array set options {-total_area 0}
+ if { [llength $args] != 2 } {
+ return -code error "Use brave_opt with -total_area \$area_value\$"
+ }
+ foreach {opt val} $args {
+ if {![info exist options($opt)]} {
+ return -code error "unknown option \"$opt\""
+ }
+ set options($opt) $val
+ }
+ set total_area $options(-total_area)
+ puts $total_area
+ global lista_generale [list]
+ set start_main [ clock seconds ]; #timestamp at the start of the proc
+optimize $start_main $total_area; #main here (call to our fuction):
+#final results:
+set results_hls  $lista_generale
+set schedule_time [lindex $results_hls 0]
+set node_per_fu [lindex $results_hls 1]
+set numb_of_fu [lindex $results_hls 2]
+set latency [lindex $results_hls 3]
+#schedule time
+foreach pair $schedule_time {
+ set node_id [lindex $pair 0]
+ set start_time [lindex $pair 1]
+ puts "Node: $node_id starts @ $start_time"
+}
+#operation per node
+foreach pair $node_per_fu {
+ set node_id [lindex $pair 0]
+ set fu_id [lindex $pair 1]
+ puts "Node: $node_id , resource used: $fu_id"
+}
+#number of operations used
+foreach pair $numb_of_fu {
+ set fu_id [lindex $pair 0]
+ set allocated [lindex $pair 1]
+ puts "Functional unit: $fu_id used $allocated times"
+}
+#non c'è da fare necessariamente!
+#puts "Latency $latency"
+
+return
 }
