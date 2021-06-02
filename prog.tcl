@@ -173,15 +173,16 @@ proc analisi_area {lista_risorse max} {
 
 ########################################################################################################################################
 
-proc optimize {start_time max} {
+proc optimize { start_main max } {
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
     # "used" is a bool type that says if it is the first time analyzing the operation 
     set lista_risorse [prima_analisi $max]
-    #if {$lista_risorse == "" } {
-	#	return ""
-		##	}
+    if {$lista_risorse == "" } {
+		return ""
+	}
+    #set lista_risorse [prima_analisi]
     # In the first iteration the list resources_to_incr is composed of all the slowest fus of the resources needed to implement the DFG operations
     # In the first step so will be analyzed if by substituing them with their faster versions, area allowing, the overall latency improve
     set resources_to_incr [list]
@@ -191,6 +192,7 @@ proc optimize {start_time max} {
             lappend resources_to_incr "$op $used"
     }
     # Parameters needed to implement the algorithm :
+    
     set l [latency $lista_risorse]                      ;#called the function "latency" that returns the latency of the DFG using the resources in lista_risorse           
     set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area used 
     set latency_optimized [list]
@@ -206,11 +208,10 @@ proc optimize {start_time max} {
     set end_opt 0                                    ;#when end_opt = 1 then the optimal solution using this alogorithm has been found 
     set first_iteration 1 				     ;#Usato per indicare che si sono anche aggiunte unità--- Caso speciale 
     set iteration 0
+    set time_passed 0
     puts "START OF THE OPTIMIZATION PHASE"
     puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
-    set time_passed 0
-    while { [expr { [expr {$time_passed < 870}] && [expr {$end_opt ==0} ] ==1 } ]  } { 
-    #while {$end_opt eq 0} {
+    while { [expr { [expr {$time_passed < 870}] && [expr {$end_opt ==0} ] ==1 } ]  } {
 	set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
@@ -392,13 +393,15 @@ proc optimize {start_time max} {
 	puts "The new resources to increment are $resources_to_incr"
 	puts "**********************************************************************************************************"		                                         
      }
-     set time_passed [expr { [ clock seconds ]- $start_time } ]
+#puts [ clock seconds ]
+set time_passed [expr { [ clock seconds ]- $start_main } ]
+#puts $time_passed
+#puts $start_main
  }
  puts "Optimization completed and associated lista_risorse is $lista_risorse"
- latency $lista_risorse	
- 
+ latency $lista_risorse
+# return $lista_generale
 }
-
 
 
 proc main { max } {
