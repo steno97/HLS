@@ -210,10 +210,10 @@ proc optimize { start_main max } {
     set first_iteration 1 				     ;#Usato per indicare che si sono anche aggiunte unità--- Caso speciale 
     set iteration 0
     set time_passed 0
-    puts "START OF THE OPTIMIZATION PHASE"
-    puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
-    ;#while { [expr { $time_passed < 870 && $end_opt == 0 } ] eq 1 } {
-     while {$end_opt eq 0} {	
+    #puts "START OF THE OPTIMIZATION PHASE"
+    #puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
+   # while { [expr { $time_passed < 870 && $end_opt == 0 } ] eq 1 } {}
+    while { $end_opt eq 0 } {
 	set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
@@ -279,7 +279,7 @@ proc optimize { start_main max } {
                 		}
             		}
             		if {$remove eq 1} {          ;#meaning that the operation associated to the added fu is no more required by the scheduler
-                    		puts "Removing operation $op from resources_to_incr since no more required "
+                    		#puts "Removing operation $op from resources_to_incr since no more required "
 		    		set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx]           ;#removed the operation from resources_to_incr
                     		set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
 			}	            
@@ -324,7 +324,7 @@ proc optimize { start_main max } {
         ;#Then is parse the list "latency_optimized" and found the configuration that give the better latency
         ;#When found then it is added to lista_risorse, if no improvent due to changing/adding of a fu then the optimization finisheds
         set success 0 
-	puts "Obtained latency optimized at iteration $iteration is $latency_optimized"
+	#puts "Obtained latency optimized at iteration $iteration is $latency_optimized"
         foreach elem $latency_optimized {
             if { [lindex $elem 1] < $l}  {
 			set success 1
@@ -339,7 +339,7 @@ proc optimize { start_main max } {
 							;#give the best result   
 	    		set end_opt 1				
 		} else {
-			puts "First iteration caso particolare"
+			#puts "First iteration caso particolare"
 		}
 	} else {   
           	;#retrieved the operation associated to the fu 
@@ -349,7 +349,7 @@ proc optimize { start_main max } {
             	if { $fu_indx != "" } {        ;#so if already used this fu then is simply incremented the number
                 	set incr_number_fu [ expr { [lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
 			set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu_to_add $incr_number_fu"]				
-			puts "Updated number of $fu_to_add associated to the operation $op is $incr_number_fu"
+			#puts "Updated number of $fu_to_add associated to the operation $op is $incr_number_fu"
 		} else {                     
                 	;#checked the "used" value associated to the operation 
                 	if { [lindex $resources_to_incr $op_indx 1] eq 0} {
@@ -365,15 +365,15 @@ proc optimize { start_main max } {
                     			}			 
                 		}
 			set lista_risorse [lreplace $lista_risorse $fu_to_update_indx $fu_to_update_indx "$fu_to_add 1"] 
-	                puts "The fu $fu_to_update associated to operation $op has been replaced with $fu_to_add"
+	                #puts "The fu $fu_to_update associated to operation $op has been replaced with $fu_to_add"
 			} else { ;#simply added in lista risorse 
             			lappend lista_risorse "$fu_to_add 1"
-				puts "Added the fu $fu_to_add associated to operation $op in lista_risorse"
+				#puts "Added the fu $fu_to_add associated to operation $op in lista_risorse"
 			}
 		}
             ;#lunched the scheduling with the new lista_risorse and evaluated the operations required (that are in the list da_incrementare) 
     		set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area used 
-		puts "Updated lista risorse is $lista_risorse with latency $l and remaing area to use $unused_area at iteration $iteration"
+		#puts "Updated lista risorse is $lista_risorse with latency $l and remaing area to use $unused_area at iteration $iteration"
 		latency $lista_risorse				;#lunched the latency function in order to get the updated list "da_incrementare"
             	set remove 1
 	    	foreach op_required $da_incrementare {		
@@ -383,7 +383,7 @@ proc optimize { start_main max } {
                 	}
             	}
             	if {$remove eq 1} {          ;#meaning that the operation associated to the added fu is no more required by the scheduler
-                    puts "Removing operation $op from resources_to_incr since no more required "
+                   # puts "Removing operation $op from resources_to_incr since no more required "
 		    set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx]           ;#removed the operation from resources_to_incr
                     set latency_optimized [lreplace $latency_optimized $op_indx $op_indx ]          ;#removed the correspondent cell in the list latency_optimized
   	    	 }	
@@ -394,25 +394,19 @@ proc optimize { start_main max } {
 			;#by adding a fu associated to the operation needed 
         		set index [expr {$index+1}]
    	      	}
-	puts "The new resources to increment are $resources_to_incr"
-	puts "**********************************************************************************************************"		       
+	#puts "The new resources to increment are $resources_to_incr"
+	#puts "**********************************************************************************************************"		       
 	set time_passed [expr { [ clock seconds ]- $start_main } ]
 #puts $time_passed
 	}
 #puts [ clock seconds ]
 #puts $start_main
     }
- puts "Optimization completed and associated lista_risorse is $lista_risorse"
+# puts "Optimization completed and associated lista_risorse is $lista_risorse"
  latency $lista_risorse
 # return $lista_generale
 }
 
-
-proc main { max } {
-	global lista_generale
-	optimize "0" $max
-	return $lista_generale
-}
 ########################################################################
 ### MAIN ###############################################################
 ########################################################################
@@ -436,31 +430,31 @@ proc brave_opt args {
  set start_main [ clock seconds ]; #timestamp at the start of the proc
 optimize $start_main $total_area; #main here (call to our fuction):
 #final results:
-set results_hls  $lista_generale
-set schedule_time [lindex $results_hls 0]
-set node_per_fu [lindex $results_hls 1]
-set numb_of_fu [lindex $results_hls 2]
-set latency [lindex $results_hls 3]
+#set results_hls  $lista_generale
+#set schedule_time [lindex $results_hls 0]
+#set node_per_fu [lindex $results_hls 1]
+#set numb_of_fu [lindex $results_hls 2]
+#set latency [lindex $results_hls 3]
 #schedule time
-foreach pair $schedule_time {
- 	set node_id [lindex $pair 0]
- 	set start_time [lindex $pair 1]
- 	puts "Node: $node_id starts @ $start_time"
-}
+#foreach pair $schedule_time {
+# 	set node_id [lindex $pair 0]
+# 	set start_time [lindex $pair 1]
+# 	puts "Node: $node_id starts @ $start_time"
+#}
 #operation per node
-foreach pair $node_per_fu {
- 	set node_id [lindex $pair 0]
- 	set fu_id [lindex $pair 1]
- 	puts "Node: $node_id , resource used: $fu_id"
-}
+#foreach pair $node_per_fu {
+# 	set node_id [lindex $pair 0]
+# 	set fu_id [lindex $pair 1]
+# 	puts "Node: $node_id , resource used: $fu_id"
+#}
 #number of operations used
-foreach pair $numb_of_fu {
- 	set fu_id [lindex $pair 0]
- 	set allocated [lindex $pair 1]
- 	puts "Functional unit: $fu_id used $allocated times"
-}
+#foreach pair $numb_of_fu {
+# 	set fu_id [lindex $pair 0]
+# 	set allocated [lindex $pair 1]
+# 	puts "Functional unit: $fu_id used $allocated times"
+#}
 #non c'è da fare necessariamente!
 #puts "Latency $latency"
 
-return
+return $lista_generale
 }
