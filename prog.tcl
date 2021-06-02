@@ -15,6 +15,7 @@ proc prima_analisi { max } {
 	set lista_risorse [list]
 	foreach node [get_sorted_nodes] {
 		set node_op [get_attribute $node operation]
+		#set fu [get_lib_fu_from_op $node_op]
 		set fu [get_lib_fus_from_op $node_op]
 		set fu [lindex $fu end]
 		set var [lsearch $lista_risorse "$fu 1"]
@@ -22,10 +23,9 @@ proc prima_analisi { max } {
 			lappend lista_risorse "$fu 1" ;#$node_op"
 		}
 	}	
-	if { [analisi_area $lista_risorse max] >= 0} {
+	if { [analisi_area $lista_risorse $max] >= 0} {
 		return $lista_risorse
-	}
-	else {
+	} else {
 		return ""
 	}
 }
@@ -349,7 +349,7 @@ proc optimize { start_main max } {
 		} else {                     
                 	;#checked the "used" value associated to the operation 
                 	if { [lindex $resources_to_incr $op_indx 1] eq 0} {
-                     		resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
+                     		set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
                 		;#updated the fu associated to the operation
                         	set fu_to_update_indx 0
 				foreach fu_j $lista_risorse {            
@@ -406,7 +406,7 @@ set time_passed [expr { [ clock seconds ]- $start_main } ]
 
 proc main { max } {
 	global lista_generale
-	optimize $max
+	optimize "0" $max
 	return $lista_generale
 }
 ########################################################################
@@ -428,7 +428,7 @@ proc brave_opt args {
  }
  set total_area $options(-total_area)
  puts $total_area
- global lista_generale [list]
+ global lista_generale
  set start_main [ clock seconds ]; #timestamp at the start of the proc
 optimize $start_main $total_area; #main here (call to our fuction):
 #final results:

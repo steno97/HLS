@@ -1,4 +1,18 @@
-proc optimize {start_time max} {
+proc prima_analisi {max} {
+	return
+}
+
+proc latency {lista} {
+
+return 
+}
+proc analisi_area { area max} {
+return
+}
+
+#proc optimize {start_time max} {
+   set max 0
+set start_time 0
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
@@ -34,12 +48,12 @@ proc optimize {start_time max} {
     puts "START OF THE OPTIMIZATION PHASE"
     puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
     set time_passed 0
-    while { [expr { [expr {$time_passed < 870}] && [expr {$end_opt ==0} ] ==1 } ]  } { 
+    while {[expr {[expr {$time_passed < 870}] && [expr {$end_opt ==0}] == 1}]} { 
     #while {$end_opt eq 0} {
-	set iteration [ expr { $iteration +1 } ]   
+	set iteration [ expr { $iteration +1 } ] 
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
-        foreach elem $resources_to_incr {
+foreach elem $resources_to_incr {
             set lista_risorse_to_test $lista_risorse               ;#lista_risorse_to_test is a list that is used to evaluate the latency by changing the resources 
                                                                    ;#of lista_risorse, at each iteration is initialized with the values in lista_risorse
             set op [lindex $elem 0]
@@ -222,4 +236,4 @@ proc optimize {start_time max} {
  puts "Optimization completed and associated lista_risorse is $lista_risorse"
  latency $lista_risorse	
  
-}
+#}
