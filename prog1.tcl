@@ -6,7 +6,7 @@ read_library ./data/RTL_libraries/RTL_library_multi-resources.txt
 
 #GLOBAL VARIABLES : 
 global lista_generale [list]
-
+global secondo_inc
 global da_incrementare [list]
 
 #####################################################################################################################################
@@ -40,6 +40,8 @@ proc latency {lista_risorse} {
 	;#puts "le risorse sono: $lista_risorse"
 	global lista_generale
 	global da_incrementare
+	global secondo_inc
+	set secondo_inc1 [list]
 	set da_incrementare1 [list]
 	set lista [list]
 	set hu [list]   		;#lista con nodo e start time
@@ -104,7 +106,8 @@ proc latency {lista_risorse} {
 						
 						}
 					break
-					} else { lappend da_incrementare1 $op_node }
+					} else { lappend da_incrementare1 $op_node
+							lappend secondo_inc1 "$op_node $l"}
 				}
 			} 
 		}
@@ -144,12 +147,34 @@ proc latency {lista_risorse} {
 	lappend lista $lista_risorse		;#"risorse n"
 	#lappend lista $l
 	set da_incrementare $da_incrementare1
+	set secondo_inc $secondo_inc1
 	set lista_generale $lista
 	return $l
 	#return $lista	
 }	
 
 #######################################################################################################################################
+
+proc ultima_analisi { } {
+	global secondo_inc
+	set boolean 0
+	set iterator 1
+	while {$boolean==0} {
+		set p [lsearch $second_inc [expr{$iterator+1}]]
+		set lista [lrange $second_inc $l $p]
+		set oper [lmap x $a {lindex $x 0}]
+		puts $oper
+		foreach elem $lista {
+			
+		
+		}
+		incr iterator
+	}
+}
+
+
+
+########################################################################################
 
 #analisi area : takes as input the resources_used in the DFG implementation and returns the remaing area 
 
