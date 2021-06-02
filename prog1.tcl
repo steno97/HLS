@@ -160,16 +160,18 @@ proc ultima_analisi { } {
 	set boolean 0
 	set iterator 1
 	while {$boolean==0} {
-		set p [lsearch $second_inc [expr{$iterator+1}]]
-		set lista [lrange $second_inc $l $p]
-		set oper [lmap x $a {lindex $x 0}]
+		set p [lsearch -index 1 $secondo_inc [expr {$iterator+1}]]
+		set lista [lrange $secondo_inc $iterator $p]
+		set oper [lmap x $lista {lindex $x 0}]
+		#puts $lista
 		puts $oper
-		foreach elem $lista {
-			
-		
+		foreach elem $oper {   ;#operazioni ad ogni livello
+			set uguali [lsearch -all $oper $elem]
+		        set number [llength $uguali]		;#numero di operazioni uguali nello stesso tempo 	
 		}
 		incr iterator
-	}
+	
+	}  ;#ATTENZIONEEEE PER USCIRE DAL WHILE SETTARE BOOLAN=1
 }
 
 
@@ -480,6 +482,5 @@ optimize $start_main $total_area; #main here (call to our fuction):
 #}
 #non c'è da fare necessariamente!
 #puts "Latency $latency"
-
 return $lista_generale
 }
