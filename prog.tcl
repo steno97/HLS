@@ -11,18 +11,28 @@ global da_incrementare [list]
 
 #####################################################################################################################################
 
-proc prima_analisi { } {
+proc prima_analisi { max } {
 	set lista_risorse [list]
 	foreach node [get_sorted_nodes] {
 		set node_op [get_attribute $node operation]
-		set fu [get_lib_fu_from_op $node_op]
+		set fu [get_lib_fus_from_op $node_op]
+		set fu [lindex $fu end]
 		set var [lsearch $lista_risorse "$fu 1"]
 		if {$var == -1} {
 			lappend lista_risorse "$fu 1" ;#$node_op"
 		}
 	}	
-	return $lista_risorse
+	if ( [analisi_area $lista_risorse max] >= 0} {
+		return $lista_risorse
+	}
+	else {
+		return ""
+	}
 }
+
+
+#gestire il caso in cui l'area non sia abbastanza per le risorse
+#gestire il caso in cui debbano essere usate risorse di bassa area
 ######################################################################################################################################
 
 
@@ -168,7 +178,10 @@ proc optimize {start_time max} {
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
     # "used" is a bool type that says if it is the first time analyzing the operation 
-    set lista_risorse [prima_analisi]
+    set lista_risorse [prima_analisi $max]
+    if {$lista_risorse==""} {
+		return ""
+	}
     # In the first iteration the list resources_to_incr is composed of all the slowest fus of the resources needed to implement the DFG operations
     # In the first step so will be analyzed if by substituing them with their faster versions, area allowing, the overall latency improve
     set resources_to_incr [list]
