@@ -22,7 +22,7 @@ proc prima_analisi { max } {
 			lappend lista_risorse "$fu 1" ;#$node_op"
 		}
 	}	
-	if ( [analisi_area $lista_risorse max] >= 0} {
+	if { [analisi_area $lista_risorse max] >= 0} {
 		return $lista_risorse
 	}
 	else {
@@ -179,9 +179,9 @@ proc optimize {start_time max} {
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
     # "used" is a bool type that says if it is the first time analyzing the operation 
     set lista_risorse [prima_analisi $max]
-    if {$lista_risorse==""} {
-		return ""
-	}
+    #if {$lista_risorse == "" } {
+	#	return ""
+		##	}
     # In the first iteration the list resources_to_incr is composed of all the slowest fus of the resources needed to implement the DFG operations
     # In the first step so will be analyzed if by substituing them with their faster versions, area allowing, the overall latency improve
     set resources_to_incr [list]

@@ -148,7 +148,6 @@ proc analisi_area {lista_risorse max} {
 
 ########################################################################################################################################
 
-
 proc optimize {start_time max} {
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
@@ -183,7 +182,7 @@ proc optimize {start_time max} {
     puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
     set time_passed 0
     while { [expr { [expr {$time_passed < 870}] && [expr {$end_opt ==0} ] ==1 } ]  } { 
-    #while {$end_opt eq 0} {
+  # while {$end_opt eq 0} {
 	set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
