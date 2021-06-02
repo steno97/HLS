@@ -1,26 +1,189 @@
-proc prima_analisi {max} {
-	return
+source ./tcl_scripts/setenv.tcl 
+read_design ./data/DFGs/fir.dot 
+read_library ./data/RTL_libraries/RTL_library_multi-resources.txt 
+
+
+
+#GLOBAL VARIABLES : 
+global lista_generale [list]
+
+global da_incrementare [list]
+
+#####################################################################################################################################
+
+proc prima_analisi { max } {
+	set lista_risorse [list]
+	foreach node [get_sorted_nodes] {
+		set node_op [get_attribute $node operation]
+		#set fu [get_lib_fu_from_op $node_op]
+		set fu [get_lib_fus_from_op $node_op]
+		set fu [lindex $fu end]
+		set var [lsearch $lista_risorse "$fu 1"]
+		if {$var == -1} {
+			lappend lista_risorse "$fu 1" ;#$node_op"
+		}
+	}	
+	if { [analisi_area $lista_risorse $max] >= 0} {
+		return $lista_risorse
+	} else {
+		return ""
+	}
 }
 
-proc latency {lista} {
 
-return 
-}
-proc analisi_area { area max} {
-return
+#gestire il caso in cui l'area non sia abbastanza per le risorse
+#gestire il caso in cui debbano essere usate risorse di bassa area
+######################################################################################################################################
+
+
+proc latency {lista_risorse} {
+	;#puts "le risorse sono: $lista_risorse"
+	global lista_generale
+	global da_incrementare
+	set da_incrementare1 [list]
+	set lista [list]
+	set hu [list]   		;#lista con nodo e start time
+	set node_fu [list]		;#lista con nodo e unità funzionale
+	set in_corso [list]		;#lista con nodo che stanno in scheduling e start_time
+	set l 1
+	set list_node [get_sorted_nodes]
+	while {$list_node != []} { 
+		foreach elem $in_corso {				
+			set node [lindex $elem 0]				;#prendo il nodo
+			set start_time [lindex $elem 1]				;#prendo lo start_time
+			set fu_indx [lsearch -index 0 -all $node_fu $node]
+			set fu [lindex [lindex $node_fu $fu_indx] 1]		;#prendo l'unità funzionale
+			set delay [get_attribute $fu delay]						
+			if { [expr {$start_time+$delay}] == $l} {					   
+				lappend hu "$node $start_time"								
+				set o_indx [lsearch $in_corso $elem]
+				set in_corso [lreplace $in_corso $o_indx $o_indx]		;#rimuovo nodo da in corso
+				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
+				if {$fu_indx != "" } {
+					set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
+					#puts "$lista_risorse"
+					#puts "quantità prima di incrementare $quantity"
+					set quantity [ expr { $quantity + 1 }]
+					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu $quantity"]
+					#puts "dopo primo ciclo dectremento: $lista_risorse"
+					#puts "quantità dopo di incrementare $quantity"
+				} else {
+					lappend lista_risorse "$fu 1"
+					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
+				}
+			}
+		}		
+		foreach node $list_node {	
+			set boolean 1
+			foreach parent [get_attribute $node parents] {		
+				if {[lsearch -index 0 $hu $parent] == -1} {
+					set boolean 0			
+				}
+			}
+			if {$boolean == 1} {
+				foreach elem $lista_risorse { 
+					set risorsa [lindex $elem 0]
+					set op_node [get_attribute $node operation]
+					set op_fu [get_attribute $risorsa operation]
+					if {$op_node == $op_fu} {
+						set node_indx [lsearch $list_node $node]
+						set list_node [lreplace $list_node $node_indx $node_indx]
+						lappend in_corso "$node $l"
+						lappend node_fu "$node $risorsa"
+						set op_idx [lsearch  $lista_risorse $elem]
+						if {[lindex $elem 1] > 1} {
+							set quantity [lindex $elem 1]
+							#puts "$lista_risorse"
+							#puts "quantità prima di decrementare $quantity"
+							set quantity [ expr {$quantity-1}]
+							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"] 
+							#puts "dopo ciclo in mezzo: $lista_risorse"
+							#puts "quantità dopo decrementare $quantity"
+						} else {
+							set lista_risorse [lreplace $lista_risorse $op_idx $op_idx]
+						
+						}
+					break
+					} else { lappend da_incrementare1 $op_node }
+				}
+			} 
+		}
+		incr l
+	}
+	while {$in_corso != []} {
+		foreach elem $in_corso {	
+			set node [lindex $elem 0]
+			set start_time [lindex $elem 1]
+			set fu_indx [lsearch -index 0 -all $node_fu $node]
+			set fu [lindex [lindex $node_fu $fu_indx] 1]
+			set delay [get_attribute $fu delay]
+			set cond [expr {$start_time + $delay}] 						;#da scrivere bene
+			if { $cond == $l} {					   
+				lappend hu "$node $start_time"		
+				set o_idx [lsearch $in_corso $elem]					
+				set in_corso [lreplace $in_corso $o_idx $o_idx]		;#rimuovo nodo da in corso
+				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
+				if {$fu_indx != "" } {
+					#puts "quantità prima di incrementare $quantity"
+					#puts "$lista_risorse"
+					set quantity [ expr {[lindex [lindex $lista_risorse $fu_indx] 1] + 1}]
+					set lista_risorse [lreplace $lista_risorse $fu_indx  $fu_indx "$fu $quantity"]
+					#puts "dopo ultimo ciclo: $lista_risorse"
+					#puts "quantità dopo di incrementare $quantity"
+				} else {
+					lappend lista_risorse "$fu 1"
+					lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
+				}				
+			}
+		}
+		incr l													
+	}
+       ;#puts $l
+	lappend lista $hu 			;#"nodo start_time"
+	lappend lista $node_fu		;#"nodo fu"
+	lappend lista $lista_risorse		;#"risorse n"
+	#lappend lista $l
+	set da_incrementare $da_incrementare1
+	set lista_generale $lista
+	return $l
+	#return $lista	
+}	
+
+#######################################################################################################################################
+
+#analisi area : takes as input the resources_used in the DFG implementation and returns the remaing area 
+
+proc analisi_area {lista_risorse max} {
+	
+	set area 0
+	set bolean 0
+	foreach elem $lista_risorse {
+		set fu [lindex $elem 0]
+		set var [get_attribute $fu area]
+		set quantity [lindex $elem 1]
+		set area [expr {$var*$quantity+$area}]
+	}
+	set unused_area [expr {$max-$area}]
+	return $unused_area
 }
 
-#proc optimize {start_time max} {
-   set max 0
-set start_time 0
+
+
+
+
+########################################################################################################################################
+
+proc optimize { start_main max } {
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
     # "used" is a bool type that says if it is the first time analyzing the operation 
     set lista_risorse [prima_analisi $max]
-    #if {$lista_risorse == "" } {
-	#	return ""
-		##	}
+    if {$lista_risorse == "" } {
+		return ""
+	
+    }
+    #set lista_risorse [prima_analisi]
     # In the first iteration the list resources_to_incr is composed of all the slowest fus of the resources needed to implement the DFG operations
     # In the first step so will be analyzed if by substituing them with their faster versions, area allowing, the overall latency improve
     set resources_to_incr [list]
@@ -30,6 +193,7 @@ set start_time 0
             lappend resources_to_incr "$op $used"
     }
     # Parameters needed to implement the algorithm :
+    
     set l [latency $lista_risorse]                      ;#called the function "latency" that returns the latency of the DFG using the resources in lista_risorse           
     set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area used 
     set latency_optimized [list]
@@ -45,15 +209,15 @@ set start_time 0
     set end_opt 0                                    ;#when end_opt = 1 then the optimal solution using this alogorithm has been found 
     set first_iteration 1 				     ;#Usato per indicare che si sono anche aggiunte unità--- Caso speciale 
     set iteration 0
+    set time_passed 0
     puts "START OF THE OPTIMIZATION PHASE"
     puts "initial lista_risorse $lista_risorse and so relative latency_optimized $latency_optimized"
-    set time_passed 0
-    while {[expr {[expr {$time_passed < 870}] && [expr {$end_opt ==0}] == 1}]} { 
-    #while {$end_opt eq 0} {
-	set iteration [ expr { $iteration +1 } ] 
+    ;#while { [expr { $time_passed < 870 && $end_opt == 0 } ] eq 1 } {
+     while {$end_opt eq 0} {	
+	set iteration [ expr { $iteration +1 } ]   
         #set elem_indx 0                      ;#Keeps track of the index of the operation in the list resources_to_incr       
 	;#updated the list resources_to_incr based on asked_resources 
-foreach elem $resources_to_incr {
+        foreach elem $resources_to_incr {
             set lista_risorse_to_test $lista_risorse               ;#lista_risorse_to_test is a list that is used to evaluate the latency by changing the resources 
                                                                    ;#of lista_risorse, at each iteration is initialized with the values in lista_risorse
             set op [lindex $elem 0]
@@ -160,6 +324,7 @@ foreach elem $resources_to_incr {
         ;#Then is parse the list "latency_optimized" and found the configuration that give the better latency
         ;#When found then it is added to lista_risorse, if no improvent due to changing/adding of a fu then the optimization finisheds
         set success 0 
+	puts "Obtained latency optimized at iteration $iteration is $latency_optimized"
         foreach elem $latency_optimized {
             if { [lindex $elem 1] < $l}  {
 			set success 1
@@ -170,8 +335,9 @@ foreach elem $resources_to_incr {
 	    } 
         } 
         if { $success eq 0 } {       ;#so if no change determines an optimization of the delay, then has been reached the optimal solution
-		if { $first_iteration eq 0} {		; #PER IL CASO PARTICOLARE, ohterwise will keep iterating 
-	    	set end_opt 1				;#Semplicemente alla prox iterazione si spera che sia tutto usato e quindi aggiunga solo fu
+		if { $first_iteration eq 0} {		;#Particulare case in first iteration if all the initial assigned fus are
+							;#give the best result   
+	    		set end_opt 1				
 		} else {
 			puts "First iteration caso particolare"
 		}
@@ -187,7 +353,7 @@ foreach elem $resources_to_incr {
 		} else {                     
                 	;#checked the "used" value associated to the operation 
                 	if { [lindex $resources_to_incr $op_indx 1] eq 0} {
-                     		resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
+                     		set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
                 		;#updated the fu associated to the operation
                         	set fu_to_update_indx 0
 				foreach fu_j $lista_risorse {            
@@ -198,7 +364,7 @@ foreach elem $resources_to_incr {
                         		set fu_to_update_indx [expr {$fu_to_update_indx + 1}]
                     			}			 
                 		}
-			set lista_risorse [lreplace $lista_risorse $fu_to_update_indx $fu_to_update_indx "fu_to_add 1"] 
+			set lista_risorse [lreplace $lista_risorse $fu_to_update_indx $fu_to_update_indx "$fu_to_add 1"] 
 	                puts "The fu $fu_to_update associated to operation $op has been replaced with $fu_to_add"
 			} else { ;#simply added in lista risorse 
             			lappend lista_risorse "$fu_to_add 1"
@@ -229,11 +395,72 @@ foreach elem $resources_to_incr {
         		set index [expr {$index+1}]
    	      	}
 	puts "The new resources to increment are $resources_to_incr"
-	puts "**********************************************************************************************************"		                                         
-     }
-     set time_passed [expr { [ clock seconds ]- $start_time } ]
- }
+	puts "**********************************************************************************************************"		       
+	set time_passed [expr { [ clock seconds ]- $start_main } ]
+#puts $time_passed
+	}
+#puts [ clock seconds ]
+#puts $start_main
+    }
  puts "Optimization completed and associated lista_risorse is $lista_risorse"
- latency $lista_risorse	
- 
-#}
+ latency $lista_risorse
+# return $lista_generale
+}
+
+
+proc main { max } {
+	global lista_generale
+	optimize "0" $max
+	return $lista_generale
+}
+########################################################################
+### MAIN ###############################################################
+########################################################################
+
+
+#SYNOPSIS: brave_opt –total_area $area_value$
+proc brave_opt args {
+ array set options {-total_area 0}
+ if { [llength $args] != 2 } {
+ 	return -code error "Use brave_opt with -total_area \$area_value\$"
+ }
+ foreach {opt val} $args {
+ 	if {![info exist options($opt)]} {
+ 		return -code error "unknown option \"$opt\""
+ 	}
+ 	set options($opt) $val
+ }
+ set total_area $options(-total_area)
+ puts $total_area
+ global lista_generale
+ set start_main [ clock seconds ]; #timestamp at the start of the proc
+optimize $start_main $total_area; #main here (call to our fuction):
+#final results:
+set results_hls  $lista_generale
+set schedule_time [lindex $results_hls 0]
+set node_per_fu [lindex $results_hls 1]
+set numb_of_fu [lindex $results_hls 2]
+set latency [lindex $results_hls 3]
+#schedule time
+foreach pair $schedule_time {
+ 	set node_id [lindex $pair 0]
+ 	set start_time [lindex $pair 1]
+ 	puts "Node: $node_id starts @ $start_time"
+}
+#operation per node
+foreach pair $node_per_fu {
+ 	set node_id [lindex $pair 0]
+ 	set fu_id [lindex $pair 1]
+ 	puts "Node: $node_id , resource used: $fu_id"
+}
+#number of operations used
+foreach pair $numb_of_fu {
+ 	set fu_id [lindex $pair 0]
+ 	set allocated [lindex $pair 1]
+ 	puts "Functional unit: $fu_id used $allocated times"
+}
+#non c'è da fare necessariamente!
+#puts "Latency $latency"
+
+return
+}
