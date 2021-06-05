@@ -155,19 +155,19 @@ proc latency {lista_risorse} {
 
 #######################################################################################################################################
 
-proc ultima_analisi { lista_risorse} {
+proc ultima_analisi { lista_risorse max} {
 	#global lista_generale 
 	#set lista_risorse [lindex lista_generale 2]
 	set risorse_aggiunte [list]
 	global secondo_inc
 	set boolean 0
 	set iterator 1
-	set l [latency (lista_risorse)]
+	set l [latency $lista_risorse]
 	while {$boolean==0} {
 		set p [lsearch -index 1 $secondo_inc [expr {$iterator+1}]]
 		set lista [lrange $secondo_inc $iterator $p]
 		set oper [lmap x $lista {lindex $x 0}]
-		puts $oper
+		#puts $oper
 		foreach elem $oper {   ;#operazioni ad ogni livello
 			#set uguali [lsearch -all $oper $elem]
 		    #set number [llength $uguali]		;#numero di operazioni uguali nello stesso tempo 	
@@ -183,7 +183,7 @@ proc ultima_analisi { lista_risorse} {
 				lappend lista_risorse "$fu 1"
 				lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 			}
-			if { analisi_area [lista_risorse max] <0} {
+			if { [analisi_area $lista_risorse $max] <0} {
 				set fu_indx [lsearch  $lista_risorse $fu]
 				if {[lindex $elem 1] > 1} {
 					set quantity [lindex $elem 1]
@@ -196,7 +196,7 @@ proc ultima_analisi { lista_risorse} {
 				break 
 			}
 			lappend risorse_aggiunte $fu
-			set l1 [latency lista_risorse]
+			set l1 [latency $lista_risorse]
 			if { $l1 < $l} {
 				
 				set boolean 1
@@ -403,19 +403,26 @@ proc optimize { start_main max } {
         }
         
 		###########################################################################################################################
-		set analisi [ultima_analisi lista_risorse]
-		set added_res [analisi 0]
-		set l1 [analisi 1]
-		if { $added_res != "" } { 
-			#Latency ;# chiamo latency per aggiornare la lista da_incrementare
+	#if { $success eq 0 } { } 
+		puts "qui"	
+		set analisi [ultima_analisi $lista_risorse $max]
+		set added_res [lindex $analisi 0]
+		set l1 [lindex $analisi 1]
+		puts "casa3"
+		if { $added_res!=[]} {
+		#if {$added_res!=""} {} 
+			puts "puts"
+			puts "ciccio"
+			puts "casa2"
 			foreach elem $added_res {
-			;#controllo se l'op aggiunta è ancora richiesta
-				if { [lsearch  -index 0 -all $da_incrementare $elem] eq  -1} {
- ;#elimino la cella relativa all'op in    resources_to_incr e latency_optim
- ;#1 step : recupero l'indice dell'operazione
+			       puts "casa1"
+		       		set valuta [lsearch -index 0 -all $da_incrementare $ele]
+		 		puts $valuta		
+				if {[lsearch -index 0 -all $da_incrementare $elem] eq -1} { 
 					set op_indx 0
+					puts "casa"
 					foreach cella $resources_to_incr { 
-						if { [lindex $cella 1] eq $elem } { 
+						if {[lindex $cella 1] eq $elem } { 
 							set resources_to_incr [ lreplace $resources_to_incr $op_indx $op_indx ] 
 							set latency_optimized [ lreplace $latency_optimized $op_indx $op_indx ] 
 							break 
@@ -426,18 +433,20 @@ proc optimize { start_main max } {
 				}
 #resetto la latenza salvata in latency_optimized
 				set indx 0 
-				foreach elem $latency_optimized { 
-				set latency_optimized [lreplace $latency_optimized $indx $indx "{lindex $elem 1} l "] 
+				foreach elem $latency_optimized {
+					set inserire [lindex $elem 1]	
+				set latency_optimized [lreplace $latency_optimized $indx $indx "$inserire $l1 "] 
 ;#nota --> " l " è la latenza ottenuta dopo ultima analisi, non so dove viene salvata 
 				set indx {expr { $indx + 1 } } 
 				}
 			} 
 		}else { 
+			puts "antonio"
 			set end_opt 1
 		}
 		###########################################################################################################################
-       
-        if { $success eq 0 } {       ;#so if no change determines an optimization of the delay, then has been reached the optimal solution
+       		puts "topolino"
+       if { $success eq 0 } { }      ;#so if no change determines an optimization of the delay, then has been reached the optimal solution
 		if { $first_iteration eq 0} {		;#Particulare case in first iteration if all the initial assigned fus are
 							;#give the best result   
 	    		set end_opt 1				
