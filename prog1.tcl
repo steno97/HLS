@@ -155,23 +155,62 @@ proc latency {lista_risorse} {
 
 #######################################################################################################################################
 
-proc ultima_analisi { } {
+proc ultima_analisi { lista_risorse} {
+	#global lista_generale 
+	#set lista_risorse [lindex lista_generale 2]
+	set risorse_aggiunte [list]
 	global secondo_inc
 	set boolean 0
 	set iterator 1
+	set l [latency (lista_risorse)]
 	while {$boolean==0} {
 		set p [lsearch -index 1 $secondo_inc [expr {$iterator+1}]]
 		set lista [lrange $secondo_inc $iterator $p]
 		set oper [lmap x $lista {lindex $x 0}]
-		#puts $lista
 		puts $oper
 		foreach elem $oper {   ;#operazioni ad ogni livello
-			set uguali [lsearch -all $oper $elem]
-		        set number [llength $uguali]		;#numero di operazioni uguali nello stesso tempo 	
+			#set uguali [lsearch -all $oper $elem]
+		    #set number [llength $uguali]		;#numero di operazioni uguali nello stesso tempo 	
+		    set fus [get_lib_fus_from_op $elem]
+		    set fus [lreverse $fus]
+		    set fu [lindex $fus 0]
+			set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
+			if {$fu_indx != "" } {
+				set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
+				set quantity [ expr { $quantity + 1 }]
+				set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu $quantity"]
+			} else {
+				lappend lista_risorse "$fu 1"
+				lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
+			}
+			if { analisi_area [lista_risorse max] <0} {
+				set fu_indx [lsearch  $lista_risorse $fu]
+				if {[lindex $elem 1] > 1} {
+					set quantity [lindex $elem 1]
+					set quantity [ expr {$quantity-1}]
+					set lista_risorse [lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"] 
+				} else {
+					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx]
+					}
+				#set boolean 1
+				break 
+			}
+			lappend risorse_aggiunte $fu
+			set l1 [latency lista_risorse]
+			if { $l1 < $l} {
+				
+				set boolean 1
+				break 
+			}
+				    
 		}
 		incr iterator
 	
 	}  ;#ATTENZIONEEEE PER USCIRE DAL WHILE SETTARE BOOLAN=1
+	if {$l1==$l} {
+		set risorse_aggiunte ""
+	}
+	return "$risorse_aggiunte $l1"
 }
 
 
@@ -201,6 +240,7 @@ proc analisi_area {lista_risorse max} {
 ########################################################################################################################################
 
 proc optimize { start_main max } {
+	global lista_generale 
     global da_incrementare
     # The list resources_to_incr  is used to keep track of operations required but that could not been executed during scheduling 
     # It's a list of pairs, meaning that each element of the list is composed of the informations {operation} {used}
@@ -360,7 +400,43 @@ proc optimize { start_main max } {
                 	#updated the fu to add
                 	set fu_to_add [lindex $elem 0]		    	
 	    } 
-        } 
+        }
+        
+		###########################################################################################################################
+		set analisi [ultima_analisi lista_risorse]
+		set added_res [analisi 0]
+		set l1 [analisi 1]
+		if { $added_res != "" } { 
+			#Latency ;# chiamo latency per aggiornare la lista da_incrementare
+			foreach elem $added_res {
+			;#controllo se l'op aggiunta è ancora richiesta
+				if { [lsearch  -index 0 -all $da_incrementare $elem] eq  -1} {
+ ;#elimino la cella relativa all'op in    resources_to_incr e latency_optim
+ ;#1 step : recupero l'indice dell'operazione
+					set op_indx 0
+					foreach cella $resources_to_incr { 
+						if { [lindex $cella 1] eq $elem } { 
+							set resources_to_incr [ lreplace $resources_to_incr $op_indx $op_indx ] 
+							set latency_optimized [ lreplace $latency_optimized $op_indx $op_indx ] 
+							break 
+						} else { 
+							set op_indx [ expr { op_indx +1 } ] 
+						}
+					}
+				}
+#resetto la latenza salvata in latency_optimized
+				set indx 0 
+				foreach elem $latency_optimized { 
+				set latency_optimized [lreplace $latency_optimized $indx $indx "{lindex $elem 1} l "] 
+;#nota --> " l " è la latenza ottenuta dopo ultima analisi, non so dove viene salvata 
+				set indx {expr { $indx + 1 } } 
+				}
+			} 
+		}else { 
+			set end_opt 1
+		}
+		###########################################################################################################################
+       
         if { $success eq 0 } {       ;#so if no change determines an optimization of the delay, then has been reached the optimal solution
 		if { $first_iteration eq 0} {		;#Particulare case in first iteration if all the initial assigned fus are
 							;#give the best result   
