@@ -209,7 +209,7 @@ proc ultima_analisi { lista_risorse max} {
 		incr iterator
 	
 	}  ;#ATTENZIONEEEE PER USCIRE DAL WHILE SETTARE BOOLAN=1
-	if {$l1>=$l} {
+	if {$l1 >= $l} {
 		set risorse_aggiunte ""
 	}
 	set lista [list]
@@ -255,7 +255,6 @@ proc optimize { start_main max } {
 		return ""
 	
     }
-    #set lista_risorse [prima_analisi]
     # In the first iteration the list resources_to_incr is composed of all the slowest fus of the resources needed to implement the DFG operations
     # In the first step so will be analyzed if by substituing them with their faster versions, area allowing, the overall latency improve
     set resources_to_incr [list]
@@ -291,7 +290,7 @@ proc optimize { start_main max } {
 	;#updated the list resources_to_incr based on asked_resources 
         foreach elem $resources_to_incr {
             set lista_risorse_to_test $lista_risorse               ;#lista_risorse_to_test is a list that is used to evaluate the latency by changing the resources 
-                                                                   ;#of lista_risorse, at each iteration is initialized with the values in lista_risorse
+                                                                    ;#of lista_risorse, at each iteration is initialized with the values in lista_risorse
             set op [lindex $elem 0]
             set used [lindex $elem 1]        
             set op_fus [get_lib_fus_from_op $op]       ;#returns the ids of the fus that can execute the operation
@@ -410,9 +409,11 @@ proc optimize { start_main max } {
 		set analisi [ultima_analisi $lista_risorse $max]
 		set added_res [lindex $analisi 0]  ;#risorse aggiunte  è una lista tipo: {l10,l10,l2,l2,l6,l7....}
 		set l [lindex $analisi 1]	;#nuova latenza
-		puts "Received from ultima analisi lat: $l and added_res : $added_res" 
+		set lista_risorse [lindex $lista_generale 2]
+		puts "Received from ultima analisi lat: $l and added_res : $added_res and updated_lista risorse: $lista_risorse" 
 		if {$added_res != "" } {
-    			set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area that can still be used
+			
+  			set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area that can still be used
 			puts "Remaing area is $unused_area" 
 			latency $lista_risorse			;#in order to get the updated list "da_incrementare"
 			puts "Resources to incr are $resources_to_incr" 
