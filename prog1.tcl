@@ -406,46 +406,50 @@ proc optimize { start_main max } {
                 	set fu_to_add [lindex $elem 0]		    	
 	    } 
         }
-        
-		###########################################################################################################################
-	if { $success eq 0 } {  
+        if { $success eq 0 } {  
 		set analisi [ultima_analisi $lista_risorse $max]
 		set added_res [lindex $analisi 0]  ;#risorse aggiunte  è una lista tipo: {l10,l10,l2,l2,l6,l7....}
-		set l1 [lindex $analisi 1]	;#nuova latenza
-		if {$added_res != "" } { 
-			foreach elem $added_res {		
-				if {[lsearch -index 0 -all $da_incrementare $elem] eq -1} { 
-					set op_indx 0
-					foreach cella $resources_to_incr { 
-						if {[lindex $cella 1] eq $elem } { 
-							set resources_to_incr [ lreplace $resources_to_incr $op_indx $op_indx ] 
-							set latency_optimized [ lreplace $latency_optimized $op_indx $op_indx ] 
-							break 
-						} else { 
-							set op_indx [ expr { op_indx +1 } ] 
-						}
+		set l [lindex $analisi 1]	;#nuova latenza
+		puts "Received from ultima analisi lat: $l and added_res : $added_res" 
+		if {$added_res != "" } {
+    			set unused_area [analisi_area $lista_risorse $max]        ;#evaluated the area that can still be used
+			puts "Remaing area is $unused_area" 
+			latency $lista_risorse			;#in order to get the updated list "da_incrementare"
+			puts "Resources to incr are $resources_to_incr" 
+			foreach fu_added $added_res {		
+          			;#retrieved the operation associated to the fu 
+          			set op [get_attribute $fu_added operation]      ;#got the operation from the fu 
+				set op_indx [lsearch -index 0 -all $resources_to_incr $op] 
+				if {$op_indx != -1} {	;#meaning that the operation has not been remvoed yet
+                		;#checked the "used" value associated to the operation 
+                			if { [lindex $resources_to_incr $op_indx 1] eq 0} {
+						puts "Setting used to 1 to op : $op"
+                     				set resources_to_incr [lreplace $resources_to_incr $op_indx $op_indx "$op 1"]               ;#set used to 1 since now the operation has been analyzed
+					}
+					;#checked if the operation is still required by the scheduler 
+					if { [lsearch -index 0 -all $da_incrementare $op] eq -1} { 	
+						puts "Removing op $op"	
+						set resources_to_incr [ lreplace $resources_to_incr $op_indx $op_indx ] 
+						set latency_optimized [ lreplace $latency_optimized $op_indx $op_indx ]
 					}
 				}
-				set indx 0
-			        #puts $latency_optimized	
-				foreach elem $latency_optimized {
-					set inserire [lindex $elem 0]
-					set latency_optimized [lreplace $latency_optimized $indx $indx "$inserire $l1"] 
-					set indx [expr { $indx+1 } ] 
-				}
-				#puts $latency_optimized
-			} 
+			}
+		   	#reset of the latency in the list latency_optimized 
+    	     		set index 0
+	     		foreach elem $latency_optimized { 
+        			set latency_optimized [lreplace $latency_optimized $index $index "[lindex $latency_optimized $index 0] $l"]                 
+				;#by adding a fu associated to the operation needed 
+        			set index [expr {$index+1}]
+   	      		}
+			puts "Resetted latency_optimized $latency_optimized, updated lista risorse is $lista_risorse"		
+	   		puts "*******************************************"
 		} else { 
-			set end_opt 1
-		}
-		###########################################################################################################################
-       		
-           ;#so if no change determines an optimization of the delay, then has been reached the optimal solution
-		if { $first_iteration eq 0} {		;#Particulare case in first iteration if all the initial assigned fus are
-							;#give the best result   
-	    		set end_opt 1				
-		} else {
+           	;#so if no change determines and also ultima_analisi has not given an optimization, then has been reached the optimal solution
+			if { $first_iteration eq 0} {		;#Particulare case in first iteration if all the initial assigned fus gave the best result   
+	    			set end_opt 1				
+			} else {
 			#puts "First iteration caso particolare"
+			}
 		}
 	} else {   
           	;#retrieved the operation associated to the fu 
