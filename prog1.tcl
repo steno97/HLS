@@ -163,6 +163,7 @@ proc ultima_analisi { lista_risorse max} {
 	set boolean 0
 	set iterator 1
 	set l [latency $lista_risorse]
+	set l1 $l
 	while {$boolean==0} {
 		set p [lsearch -index 1 $secondo_inc [expr {$iterator+1}]]
 		set lista [lrange $secondo_inc $iterator $p]
