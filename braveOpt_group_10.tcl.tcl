@@ -139,6 +139,7 @@ proc latency {lista_risorse} {
 
 
 proc ultima_analisi { lista_risorse max} {
+	puts "area mancante a inizio di ultima_analisi [analisi_area $lista_risorse $max] "
 	set risorse_aggiunte [list]
 	global secondo_inc
 	set boolean 0
@@ -211,6 +212,7 @@ proc analisi_area {lista_risorse max} {
 		set area [expr {$var*$quantity+$area}]
 	}
 	set unused_area [expr {$max-$area}]
+	puts $unused_area
 	return $unused_area
 }
 
@@ -494,5 +496,6 @@ proc brave_opt args {
  global lista_generale
  set start_main [ clock seconds ]; #timestamp at the start of the proc
 optimize $start_main $total_area; #main here (call to our fuction):
+analisi_area [lindex $lista_generale 2] $total_area
 return $lista_generale
 }

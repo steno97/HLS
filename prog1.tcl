@@ -188,8 +188,7 @@ proc ultima_analisi { lista_risorse max} {
 	}  ;#ATTENZIONEEEE PER USCIRE DAL WHILE SETTARE BOOLAN=1
 	if {$l1 >= $l} {
 		set risorse_aggiunte ""
-	}
-	else {
+	} else {
 		migliori $lista_risorse $risorse_aggiunte $max $l1 1
 	}
 	set lista [list]
@@ -198,14 +197,17 @@ proc ultima_analisi { lista_risorse max} {
 	return $lista
 }
 ######################################################################################
-proc migliori{ lista_risorse risorse_aggiunte max l1 livello} {
-	set provvisoria [risorse_aggiunte]
+proc migliori { lista_risorse risorse_aggiunte max l1 livello} {
+	set provvisorio $risorse_aggiunte
 	foreach elem $risorse_aggiunte {
 			set oper [get_attribute $elem operation]
-			set fus [get_lib_fus_from_op $elem]
+			set fus [get_lib_fus_from_op $oper]
 			set fus [lrange $fus 0 end-$livello]
 			set fus [lreverse $fus]
-			foreach fu $fus {
+			puts "ciao"
+			set fu [lindex $fus 0]
+			if {$fu != ""} {
+				puts $fu
 				set fu_indx [lsearch -index 0 -all $lista_risorse $fu]
 				if {$fu_indx != "" } {
 					set quantity [lindex [lindex $lista_risorse $fu_indx] 1] 
@@ -215,12 +217,13 @@ proc migliori{ lista_risorse risorse_aggiunte max l1 livello} {
 						lappend lista_risorse "$fu 1"
 						lsort -dictionary $lista_risorse				;#è una lista contenente non tutte le risorse ma quelle attualmente disponibili
 				}
+				puts $lista_risorse
 				if { [analisi_area $lista_risorse $max] <0} {
 					set fu_indx [lsearch  $lista_risorse $fu]
 					if {[lindex $elem 1] > 1} {
 						set quantity [lindex $elem 1]
 						set quantity [ expr {$quantity-1}]
-						set lista_risorse [lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"] 
+						set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$fu $quantity"] 
 					} else {
 						set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx]
 						}
@@ -230,22 +233,22 @@ proc migliori{ lista_risorse risorse_aggiunte max l1 livello} {
 				if {[lindex $elem 1] > 1} {
 					set quantity [lindex $elem 1]
 					set quantity [ expr {$quantity-1}]
-					set lista_risorse [lreplace $lista_risorse $op_idx $op_idx "$risorsa $quantity"] 
+					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx "$elem $quantity"] 
 				} else {
 					set lista_risorse [lreplace $lista_risorse $fu_indx $fu_indx]
 				}
-				set l [latency]
-				set elem_indx [lsearch $provvisoria $elem]
-				set $provvisoria [lreplace $lista_risorse $fu_indx $fu_indx $fu]
-			}
+				set l [latency $lista_risorse]
+				set elem_indx [lsearch $provvisorio $elem]
+				set provvisorio [lreplace $lista_risorse $fu_indx $fu_indx $fu]
+		}
 	}
 	if {$l>=$l1} {
 		if {$livello==1} {
-			set provvisorio [lista_risorse risorse_aggiunte max l1 2]
+			set provvisorio [migliori $lista_risorse $provvisorio $max $l1 2]
 			set l [latency $lista_risorse]
 		} 
 		if {$l>= $l1} {
-			set $provvisorio $risorse_aggiunte
+			set provvisorio $risorse_aggiunte
 		}
 	}
 	return $provvisorio
